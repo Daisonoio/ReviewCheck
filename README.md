@@ -16,12 +16,13 @@
 
 > [!IMPORTANT]
 > **Project status: design complete, MVP execution planned — build not yet started.**
-> This repository contains the full product analysis, the machine-readable contracts, and a concrete
-> **MVP execution plan** (stub-first MCP → analysis pipeline → grounded LLM). The package scaffolding is
-> in place; the MVP itself is not built yet.
+> This is the **essentials branch**: it carries only the documents strictly needed to build a
+> professional MVP — the contracts, the four build plans, and the agent. The machine-readable contracts
+> and package scaffolding are in place; the MVP itself is not built yet. The **full product analysis**
+> (problem, cognitive science, market, extended architecture, security, reading guide) lives on the
+> `claude/guided-code-review-tool-6j7eyb` branch — nothing was lost.
 >
-> **New here? Start with the [reading guide](docs/26-guida-lettura.md)** — it splits every document into
-> 🔧 *what you open while building the MVP* vs 📚 *background, rationale & pitch material*.
+> **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
 ---
 
@@ -154,7 +155,9 @@ flowchart TB
   reliable work; the **LLM only interprets** (intent labels + explanations) and its output is bound to
   citations. This keeps the tool robust and testable, and means the product never *depends* on the LLM
   being correct.
-- Full design in [`docs/`](docs/) — start with the [blueprint](docs/16-blueprint-sviluppo.md).
+- Design contracts in [`docs/13`](docs/13-specifica-build.md) and [`spec/`](spec/); the build plans run
+  [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) → [`23`](docs/23-piano-mcp-stub-first.md) →
+  [`24`](docs/24-piano-pipeline.md) → [`25`](docs/25-piano-llm.md).
 
 ## Roadmap
 
@@ -168,8 +171,8 @@ flowchart TB
 ## Repository structure
 
 ```
-docs/                 Full analysis + execution plans (00–26).
-                      → New here? docs/26-guida-lettura.md (reading guide) is the map.
+docs/                 Essential set: contracts (13), MVP plans (22–25), agent (21), flow (12).
+                      → Index: docs/README.md. Full analysis lives on the main branch.
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
 packages/ · apps/     Monorepo scaffolding: core · pipeline · llm · platform · session; apps/mcp
@@ -180,17 +183,16 @@ SECURITY.md           Vulnerability disclosure policy
 ```
 
 > The detailed design docs are currently written in **Italian**. The
-> [reading guide](docs/26-guida-lettura.md) and the [index](docs/README.md) map them out; English
+> [index](docs/README.md) maps them out; English
 > translation is a welcome contribution.
 
 ## Getting started
 
 There's no runnable code yet. Where to look, depending on what you want:
 
-1. **Find your way around** — the [reading guide](docs/26-guida-lettura.md) splits every document into
-   🔧 *implementation* vs 📚 *documentation*.
-2. **Understand the why** — the [executive summary](docs/00-executive-summary.md) for the thesis, or the
-   [blueprint](docs/16-blueprint-sviluppo.md) (self-contained master document) for depth.
+1. **Find your way around** — [`docs/README.md`](docs/README.md), the essential-docs index.
+2. **Understand the why** — the extended analysis (thesis, cognitive science, market, UX, security)
+   lives on the `claude/guided-code-review-tool-6j7eyb` branch.
 3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) (technical
    gates only), then the three build plans in order:
    [MCP stub-first](docs/23-piano-mcp-stub-first.md) → [analysis pipeline](docs/24-piano-pipeline.md) →
@@ -221,8 +223,7 @@ ReviewCheck handles source code — the most sensitive asset a software team has
 first-class concern, not an afterthought. The local, no-backend model dissolves whole classes of SaaS
 risk; the residual focus is **local token handling**, **supply-chain integrity** of the OSS package,
 **no phone-home**, and **indirect prompt injection** via untrusted repo content. See
-[`docs/15-security-assessment.md`](docs/15-security-assessment.md) and
-[`SECURITY.md`](SECURITY.md).
+[`SECURITY.md`](SECURITY.md) (the full security assessment is on the main branch).
 
 ## License
 
