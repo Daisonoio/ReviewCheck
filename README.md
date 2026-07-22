@@ -15,10 +15,13 @@
 > decision. Designed first for developers with ADHD / attention differences; useful for everyone.
 
 > [!IMPORTANT]
-> **Project status: design & specification complete — implementation not started.**
-> This repository currently contains the full product analysis, the machine-readable contracts, and a
-> step-by-step execution runbook. There is **no application code yet**. Building it is the next step,
-> and [contributions are welcome](#contributing).
+> **Project status: design complete, MVP execution planned — build not yet started.**
+> This repository contains the full product analysis, the machine-readable contracts, and a concrete
+> **MVP execution plan** (stub-first MCP → analysis pipeline → grounded LLM). The package scaffolding is
+> in place; the MVP itself is not built yet.
+>
+> **New here? Start with the [reading guide](docs/26-guida-lettura.md)** — it splits every document into
+> 🔧 *what you open while building the MVP* vs 📚 *background, rationale & pitch material*.
 
 ---
 
@@ -165,40 +168,45 @@ flowchart TB
 ## Repository structure
 
 ```
-docs/                 Full analysis (00–18): problem, cognitive science, architecture,
-                      contracts, roadmap, security, blueprint, execution runbook
+docs/                 Full analysis + execution plans (00–26).
+                      → New here? docs/26-guida-lettura.md (reading guide) is the map.
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
-evals/                Capability evaluation suite (schema, rubric, cases)
-.github/workflows/    Security CI (gitleaks, Semgrep, CodeQL, Trivy, SBOM) + eval validation
+packages/ · apps/     Monorepo scaffolding: core · pipeline · llm · platform · session; apps/mcp
+.github/workflows/    Security CI (gitleaks, Semgrep, CodeQL, Trivy, SBOM)
 AGENTS.md             Context for agents working on this repo
 GUARDRAILS.md         Guardrails and how each is enforced
 SECURITY.md           Vulnerability disclosure policy
 ```
 
-> The detailed design docs are currently written in **Italian**. An index is in
-> [`docs/README.md`](docs/README.md); English translation is a welcome contribution.
+> The detailed design docs are currently written in **Italian**. The
+> [reading guide](docs/26-guida-lettura.md) and the [index](docs/README.md) map them out; English
+> translation is a welcome contribution.
 
 ## Getting started
 
-There's no code to run yet. To understand or build the project:
+There's no runnable code yet. Where to look, depending on what you want:
 
-1. **Understand it** — read [`docs/16-blueprint-sviluppo.md`](docs/16-blueprint-sviluppo.md) (the
-   self-contained master document).
-2. **Build it** — follow [`docs/18-runbook-esecuzione.md`](docs/18-runbook-esecuzione.md): ordered
-   steps, each with a concrete check and a stop condition.
-3. **The contracts are the source of truth** — [`docs/13-specifica-build.md`](docs/13-specifica-build.md)
+1. **Find your way around** — the [reading guide](docs/26-guida-lettura.md) splits every document into
+   🔧 *implementation* vs 📚 *documentation*.
+2. **Understand the why** — the [executive summary](docs/00-executive-summary.md) for the thesis, or the
+   [blueprint](docs/16-blueprint-sviluppo.md) (self-contained master document) for depth.
+3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) (technical
+   gates only), then the three build plans in order:
+   [MCP stub-first](docs/23-piano-mcp-stub-first.md) → [analysis pipeline](docs/24-piano-pipeline.md) →
+   [grounded LLM](docs/25-piano-llm.md). The agent itself is specced in [`docs/21`](docs/21-piano-sviluppo-agente.md).
+4. **The contracts are the source of truth** — [`docs/13-specifica-build.md`](docs/13-specifica-build.md)
    and [`spec/`](spec/).
 
 ## Contributing
 
 This is an early-stage, greenfield project — a good moment to shape it. Ways to help:
 
-- **Implementation** — pick up the execution runbook ([`docs/18`](docs/18-runbook-esecuzione.md))
-  starting at S1 (monorepo) and S2 (`packages/core` types with the invariants).
+- **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-roadmap-esecutiva-mvp.md)) starting
+  with the stub-first MCP server ([`docs/23`](docs/23-piano-mcp-stub-first.md)).
 - **Language support** — additional tree-sitter grammars beyond TS/JS + Python.
-- **Evals** — new capability cases in [`evals/cases/`](evals/cases) (grounding, no-verdict,
-  co-presence, human-in-the-loop).
+- **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
+  deferred until after the MVP (see [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §5).
 - **Cognitive-accessibility research** — help design/run the Phase-0 study with neurodivergent
   developers (*"nothing about us without us"*).
 - **Docs** — English translation of the design docs.
