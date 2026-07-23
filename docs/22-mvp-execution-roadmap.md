@@ -37,7 +37,7 @@ All automatable, no person needed:
 | **G-ROUNDTRIP** | session state is reconstructed after an interruption | round-trip test on a local file |
 | **G-NOPHONE** | no network beyond the configured LLM (+ platform in Mode B) | network test in CI |
 | **G-E2E** | the MCP tools return **co-present** blocks end-to-end | integration test on a sample repo |
-| **G-RECOVERY** | the R1–R10 commands restore the action by re-calling the tool | integration test (protocol [`docs/21`](21-piano-sviluppo-agente.md) §4.2) |
+| **G-RECOVERY** | the R1–R10 commands restore the action by re-calling the tool | integration test (protocol [`docs/21`](21-development-plan.md) §4.2) |
 | **G-GROUNDING** | the LLM adapter **rejects** output without `citations` (≥1) | unit test on `ReviewCheck.Llm` |
 
 > **`evals/` suite removed** (current choice): during the MVP, grounding and no-verdict are verified
@@ -147,9 +147,9 @@ And the deferred technical extensions:
 
 ## References
 
-- **Agent plan (WHAT/HOW/recovery):** [`docs/21`](21-piano-sviluppo-agente.md)
+- **Agent plan (WHAT/HOW/recovery):** [`docs/21`](21-development-plan.md)
 - **MCP contracts:** [`spec/mcp-tools.json`](../spec/mcp-tools.json)
 - **Enforcement (deterministic/instructed layers):** [`GUARDRAILS.md`](../GUARDRAILS.md)
-- **Full vision / rationale (with the original social gates):** `docs/14`, `docs/18` (full branch)
+- **Full vision / rationale (with the original social gates):** `docs/14`, `docs/18` (in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo)
 
 **Status:** MVP roadmap with technical gates only. Next step: **MVP-1 (walking skeleton, stub-first)**.

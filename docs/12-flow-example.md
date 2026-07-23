@@ -110,5 +110,5 @@ Key points upheld:
 | Agent bug found (maybe) later, in the PR | Agent bug found **before** the PR, locally |
 | "I opened the PR but I'm not sure what it does" | Outcome = sum of conscious decisions + corrections applied |
 
-This flow is the behavioral reference for the implementation: the [build specification](13-specifica-build.md)
+This flow is the behavioral reference for the implementation: the [build specification](13-specification-build.md)
 defines its constraints, local state, and MCP tools.

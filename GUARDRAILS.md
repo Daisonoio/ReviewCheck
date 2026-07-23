@@ -30,7 +30,7 @@ We distinguish two levels, because over-claiming "guarantees" would be a broken 
 - **Deterministically guaranteed** — what depends on **our code**: the shape of the data (co-presence
   and mandatory citations in the schema), the absence of verdict tools, the "outcome = human decisions +
   confirmation" rule, no-phone-home. It's **testable** and covered by the **technical gates** in CI
-  (see [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §0 and §4).
+  (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §0 and §4).
 - **Strongly instructed** — what, when ReviewCheck runs as an **`.md` agent** inside a host LLM, depends
   on the host: the on-screen *presentation* (visual co-presence, the "explain and ask" tone, the
   one-block-at-a-time rhythm). The LLM almost always follows it, but it's **not an ironclad guarantee**.
@@ -57,7 +57,7 @@ performance — that would be surveillance and a dark pattern.
 
 The guardrails aren't claims: they're **verified**. For the MVP, the substance guardrails are covered by
 **unit tests and technical gates** (`G-SCHEMA`, `G-GROUNDING`, `G-NOVERDICT`, `G-ROUNDTRIP`, `G-NOPHONE`,
-`G-E2E`, `G-RECOVERY` — see [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §0): a block without a
+`G-E2E`, `G-RECOVERY` — see [`docs/22`](docs/22-mvp-execution-roadmap.md) §0): a block without a
 citation, an emitted verdict, an explanation without code, or an outcome without human decisions all
 **fail the build**. The dedicated eval suite (`evals/`, gate `G-EVAL`) is reintroduced once the MVP is
-complete ([`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §5).
+complete ([`docs/22`](docs/22-mvp-execution-roadmap.md) §5).

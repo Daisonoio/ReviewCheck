@@ -6,7 +6,7 @@
 > substance* and are covered elsewhere.
 >
 > **Sources of truth:** [`spec/mcp-tools.json`](../spec/mcp-tools.json) (contracts), [`GUARDRAILS.md`](../GUARDRAILS.md)
-> (enforcement), [`docs/13`](13-specifica-build.md) §1 (constraints). In case of conflict, the spec wins.
+> (enforcement), [`docs/13`](13-specification-build.md) §1 (constraints). In case of conflict, the spec wins.
 
 This document is split into three parts answering three questions:
 1. **WHAT** the agent does (observable behavior, per phase).
@@ -256,7 +256,7 @@ we list **what must work** at each increment.
 - [ ] **Consistency:** no verdict language in the file; every tool cited exists in
       [`spec/mcp-tools.json`](../spec/mcp-tools.json); the guardrails point to [`GUARDRAILS.md`](../GUARDRAILS.md).
 - [ ] **Verification:** co-presence / grounding / no-verdict / HITL covered by the **unit tests and
-      technical gates** of [`docs/22`](22-roadmap-esecutiva-mvp.md) §0 (`G-SCHEMA`, `G-GROUNDING`,
+      technical gates** of [`docs/22`](22-mvp-execution-roadmap.md) §0 (`G-SCHEMA`, `G-GROUNDING`,
       `G-NOVERDICT`, `G-RECOVERY`). The `evals/` suite (gate `G-EVAL`) returns once the MVP is complete.
 
 ## 4.2 How to test recovery (protocol)
@@ -280,6 +280,6 @@ loop of apologies.
 - **Agent definition:** [`agent/reviewcheck.agent.md`](../agent/reviewcheck.agent.md)
 - **MCP contracts (truth):** [`spec/mcp-tools.json`](../spec/mcp-tools.json)
 - **Enforcement and layers:** [`GUARDRAILS.md`](../GUARDRAILS.md) §2–§3
-- **Non-negotiable constraints:** [`docs/13`](13-specifica-build.md) §1
+- **Non-negotiable constraints:** [`docs/13`](13-specification-build.md) §1
 
 **Status:** agent plan complete (WHAT + HOW + per-action recovery). Ready for increments A0–A3.

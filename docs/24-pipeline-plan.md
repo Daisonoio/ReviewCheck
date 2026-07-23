@@ -2,12 +2,12 @@
 
 > **Purpose:** turn a **diff** into **structural blocks** — small, coherent, ordered, with
 > **deterministic line citations** and graph relations. It's the **MVP-2** milestone of
-> [`docs/22`](22-roadmap-esecutiva-mvp.md): it replaces the stub's **fixtures**
-> ([`docs/23`](23-piano-mcp-stub-first.md)) with **real blocks** extracted from the user's code.
+> [`docs/22`](22-mvp-execution-roadmap.md): it replaces the stub's **fixtures**
+> ([`docs/23`](23-mcp-stub-first-plan.md)) with **real blocks** extracted from the user's code.
 >
 > **Important boundary:** this pipeline produces the **structure** (code + citations + relations +
 > structural uncertainty). The *narrative* of the explanation (`what/why/link`) is added by the **LLM**,
-> which is the next plan ([#3](25-piano-llm.md) — `ReviewCheck.Llm`). Here there's **no LLM**: everything
+> which is the next plan ([#3](25-llm-plan.md) — `ReviewCheck.Llm`). Here there's **no LLM**: everything
 > is **deterministic** and testable with golden tests.
 >
 > **Sources of truth:** types in [`ReviewCheck.Core`](../src/ReviewCheck.Core) (`Block`,
@@ -232,9 +232,9 @@ the plug-in worked.
 
 ## References
 
-- **MVP roadmap:** [`docs/22`](22-roadmap-esecutiva-mvp.md) (MVP-2)
-- **Stub-first MCP plan (the `IReviewProvider` seam):** [`docs/23`](23-piano-mcp-stub-first.md)
-- **LLM plan (completes the `StructuralBlock`s):** [`docs/25`](25-piano-llm.md)
+- **MVP roadmap:** [`docs/22`](22-mvp-execution-roadmap.md) (MVP-2)
+- **Stub-first MCP plan (the `IReviewProvider` seam):** [`docs/23`](23-mcp-stub-first-plan.md)
+- **LLM plan (completes the `StructuralBlock`s):** [`docs/25`](25-llm-plan.md)
 - **Diff reader (input):** [`ReviewCheck.Platform`](../src/ReviewCheck.Platform)
 - **Types:** [`ReviewCheck.Core`](../src/ReviewCheck.Core)
 

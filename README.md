@@ -16,11 +16,11 @@
 
 > [!IMPORTANT]
 > **Project status: design complete, MVP execution planned — build not yet started.**
-> This is the **essentials branch**: it carries only the documents strictly needed to build a
-> professional MVP — the contracts, the four build plans, and the agent. The machine-readable contracts
-> and package scaffolding are in place; the MVP itself is not built yet. The **full product analysis**
-> (problem, cognitive science, market, extended architecture, security, reading guide) lives on the
-> `claude/guided-code-review-tool-6j7eyb` branch — nothing was lost.
+> This repo carries the **essential set** to build a professional MVP — the contracts, the four build
+> plans, and the agent. The machine-readable contracts are in place; the MVP itself is not built yet.
+> The **full product analysis** (problem, cognitive science, market, extended architecture, security,
+> reading guide) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo —
+> nothing was lost.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
@@ -155,9 +155,9 @@ flowchart TB
   reliable work; the **LLM only interprets** (intent labels + explanations) and its output is bound to
   citations. This keeps the tool robust and testable, and means the product never *depends* on the LLM
   being correct.
-- Design contracts in [`docs/13`](docs/13-specifica-build.md) and [`spec/`](spec/); the build plans run
-  [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) → [`23`](docs/23-piano-mcp-stub-first.md) →
-  [`24`](docs/24-piano-pipeline.md) → [`25`](docs/25-piano-llm.md).
+- Design contracts in [`docs/13`](docs/13-specification-build.md) and [`spec/`](spec/); the build plans run
+  [`docs/22`](docs/22-mvp-execution-roadmap.md) → [`23`](docs/23-mcp-stub-first-plan.md) →
+  [`24`](docs/24-pipeline-plan.md) → [`25`](docs/25-llm-plan.md).
 
 ## Roadmap
 
@@ -171,20 +171,16 @@ flowchart TB
 ## Repository structure
 
 ```
-docs/                 Essential set: contracts (13), MVP plans (22–25), agent (21), flow (12).
-                      → Index: docs/README.md. Full analysis lives on the main branch.
+docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
-src/ · tests/         .NET solution: ReviewCheck.Core · .Pipeline · .Llm · .Platform · .Session · .Mcp
-.github/workflows/    Security CI (gitleaks, Semgrep, CodeQL, Trivy, SBOM)
-AGENTS.md             Context for agents working on this repo
 GUARDRAILS.md         Guardrails and how each is enforced
-SECURITY.md           Vulnerability disclosure policy
 ```
 
-> The detailed design docs are currently written in **Italian**. The
-> [index](docs/README.md) maps them out; English
-> translation is a welcome contribution.
+> This repo carries the **essential set** to build the MVP; the [`docs/README.md`](docs/README.md)
+> index maps it out. The **full analysis** (problem, cognitive science, market, extended architecture,
+> security) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo. The
+> .NET solution (`src/`, `tests/`) is built from these plans starting at MVP-1 ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
 
 ## Getting started
 
@@ -192,38 +188,37 @@ There's no runnable code yet. Where to look, depending on what you want:
 
 1. **Find your way around** — [`docs/README.md`](docs/README.md), the essential-docs index.
 2. **Understand the why** — the extended analysis (thesis, cognitive science, market, UX, security)
-   lives on the `claude/guided-code-review-tool-6j7eyb` branch.
-3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) (technical
+   lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
+3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-mvp-execution-roadmap.md) (technical
    gates only), then the three build plans in order:
-   [MCP stub-first](docs/23-piano-mcp-stub-first.md) → [analysis pipeline](docs/24-piano-pipeline.md) →
-   [grounded LLM](docs/25-piano-llm.md). The agent itself is specced in [`docs/21`](docs/21-piano-sviluppo-agente.md).
-4. **The contracts are the source of truth** — [`docs/13-specifica-build.md`](docs/13-specifica-build.md)
+   [MCP stub-first](docs/23-mcp-stub-first-plan.md) → [analysis pipeline](docs/24-pipeline-plan.md) →
+   [grounded LLM](docs/25-llm-plan.md). The agent itself is specced in [`docs/21`](docs/21-development-plan.md).
+4. **The contracts are the source of truth** — [`docs/13-specification-build.md`](docs/13-specification-build.md)
    and [`spec/`](spec/).
 
 ## Contributing
 
 This is an early-stage, greenfield project — a good moment to shape it. Ways to help:
 
-- **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-roadmap-esecutiva-mvp.md)) starting
-  with the stub-first MCP server ([`docs/23`](docs/23-piano-mcp-stub-first.md)).
+- **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-mvp-execution-roadmap.md)) starting
+  with the stub-first MCP server ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
 - **Language support** — additional language analyzers beyond C# (Roslyn).
 - **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
-  deferred until after the MVP (see [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §5).
+  deferred until after the MVP (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §5).
 - **Cognitive-accessibility research** — help design/run the Phase-0 study with neurodivergent
   developers (*"nothing about us without us"*).
 - **Docs** — English translation of the design docs.
 
-Please read [`AGENTS.md`](AGENTS.md) and [`GUARDRAILS.md`](GUARDRAILS.md) first: contributions that
-violate the non-negotiable constraints (e.g. adding a backend, or an "auto-approve" capability) can't
-be accepted, by design.
+Please read [`GUARDRAILS.md`](GUARDRAILS.md) first: contributions that violate the non-negotiable
+constraints (e.g. adding a backend, or an "auto-approve" capability) can't be accepted, by design.
 
 ## Security & privacy
 
 ReviewCheck handles source code — the most sensitive asset a software team has — so security is a
 first-class concern, not an afterthought. The local, no-backend model dissolves whole classes of SaaS
 risk; the residual focus is **local token handling**, **supply-chain integrity** of the OSS package,
-**no phone-home**, and **indirect prompt injection** via untrusted repo content. See
-[`SECURITY.md`](SECURITY.md) (the full security assessment is on the main branch).
+**no phone-home**, and **indirect prompt injection** via untrusted repo content. The full security
+assessment lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
 
 ## License
 
