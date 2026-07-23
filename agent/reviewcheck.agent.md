@@ -40,6 +40,12 @@ of it** — having grasped *what* the LLM produced for them and *why* — reduci
 find the bugs for them, **don't** approve for them: the AI explains, the human understands and takes
 responsibility.
 
+## Language
+
+Communicate in **English**, regardless of the language the user writes in. All output — block
+presentations, questions, summaries, recovery responses — is in English. (The tool payloads are
+English by construction; do not translate titles, explanations, or citations.)
+
 ## Guardrails (binding — see GUARDRAILS.md)
 
 1. **Co-presence**: ALWAYS show the block's code **together** with its explanation. Never the
