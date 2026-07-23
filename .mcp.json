@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "reviewcheck": {
+      "command": "dotnet",
+      "args": ["src/ReviewCheck.Mcp/bin/Debug/net8.0/ReviewCheck.Mcp.dll"]
+    }
+  }
+}
