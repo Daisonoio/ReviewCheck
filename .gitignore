@@ -1,0 +1,27 @@
+# .NET build artifacts
+bin/
+obj/
+artifacts/
+*.user
+
+# NuGet
+*.nupkg
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ReviewCheck local state (contains code — never commit)
+.reviewcheck/
+.test-repo/
+
+# Environment
+.env
+.env.*
