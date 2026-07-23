@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ReviewCheck.Core\ReviewCheck.Core.csproj" />
+    <ProjectReference Include="..\ReviewCheck.Pipeline\ReviewCheck.Pipeline.csproj" />
+    <ProjectReference Include="..\ReviewCheck.Platform\ReviewCheck.Platform.csproj" />
     <ProjectReference Include="..\ReviewCheck.Session\ReviewCheck.Session.csproj" />
   </ItemGroup>
 
