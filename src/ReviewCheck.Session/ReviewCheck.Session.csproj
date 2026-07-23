@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReviewCheck.Core\ReviewCheck.Core.csproj" />
+  </ItemGroup>
+
+</Project>
