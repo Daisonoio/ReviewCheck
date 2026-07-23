@@ -2,8 +2,8 @@
 
 > **Purpose:** build `ReviewCheck.Mcp` as an **end-to-end skeleton runnable in Claude Code**, with the 7
 > tools returning **fixture blocks** — fake but **schema-conformant** (`code`, `citations` ≥1,
-> `uncertainty`). It's the **MVP-1** milestone of [`docs/22`](22-roadmap-esecutiva-mvp.md): it unblocks
-> everything else and makes the **R1–R10** recovery commands of [`docs/21`](21-piano-sviluppo-agente.md)
+> `uncertainty`). It's the **MVP-1** milestone of [`docs/22`](22-mvp-execution-roadmap.md): it unblocks
+> everything else and makes the **R1–R10** recovery commands of [`docs/21`](21-development-plan.md)
 > **testable right away**.
 >
 > **Sources of truth:** [`spec/mcp-tools.json`](../spec/mcp-tools.json) (tool contracts),
@@ -198,7 +198,7 @@ public sealed class SessionStore
 - **G-E2E(stub)** — the chain `get_review_plan → next_block → accept/correction → submit_review` runs
   end-to-end against the stub and every block comes out **co-present**.
 - **G-RECOVERY(stub)** — for each R1–R10 the command restores the action by re-calling the tool
-  (protocol [`docs/21`](21-piano-sviluppo-agente.md) §4.2), with a natural tone and without altering state.
+  (protocol [`docs/21`](21-development-plan.md) §4.2), with a natural tone and without altering state.
 
 ---
 
@@ -230,8 +230,8 @@ When the pipeline arrives in MVP-2/3:
 
 ## References
 
-- **MVP roadmap:** [`docs/22`](22-roadmap-esecutiva-mvp.md) (MVP-1)
-- **Agent plan (WHAT/HOW/recovery R1–R10):** [`docs/21`](21-piano-sviluppo-agente.md)
+- **MVP roadmap:** [`docs/22`](22-mvp-execution-roadmap.md) (MVP-1)
+- **Agent plan (WHAT/HOW/recovery R1–R10):** [`docs/21`](21-development-plan.md)
 - **Tool contracts:** [`spec/mcp-tools.json`](../spec/mcp-tools.json)
 - **Local state:** [`spec/session-state.schema.json`](../spec/session-state.schema.json)
 - **Types/invariants:** [`ReviewCheck.Core`](../src/ReviewCheck.Core)

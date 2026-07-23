@@ -1,8 +1,8 @@
 # 25 — Development plan: **LLM adapter + grounded explanations** (MVP-3)
 
-> **Purpose:** complete the pipeline's **`StructuralBlock`s** ([`docs/24`](24-piano-pipeline.md)) by
+> **Purpose:** complete the pipeline's **`StructuralBlock`s** ([`docs/24`](24-pipeline-plan.md)) by
 > turning them into real **`Block`s** — adding the `what/why/link` **narrative** with the user's LLM.
-> It's the **MVP-3** milestone of [`docs/22`](22-roadmap-esecutiva-mvp.md): it's **the only point in
+> It's the **MVP-3** milestone of [`docs/22`](22-mvp-execution-roadmap.md): it's **the only point in
 > ReviewCheck where the AI enters**, and it must be **reined in**.
 >
 > **Boundary (from the previous plan):** the pipeline has already produced `code` + **deterministic
@@ -11,7 +11,7 @@
 > `Block` **always** comes out.
 >
 > **Sources of truth:** the `Explanation`/`Block` records in [`ReviewCheck.Core`](../src/ReviewCheck.Core),
-> `StructuralBlock` in [`docs/24`](24-piano-pipeline.md). LLM via the **Anthropic API** (`HttpClient` client).
+> `StructuralBlock` in [`docs/24`](24-pipeline-plan.md). LLM via the **Anthropic API** (`HttpClient` client).
 
 ---
 
@@ -259,9 +259,9 @@ diff → a real guided review) is complete. The MVP-1 e2e/recovery tests now run
 
 ## References
 
-- **MVP roadmap:** [`docs/22`](22-roadmap-esecutiva-mvp.md) (MVP-3)
-- **Pipeline (produces the `StructuralBlock`s):** [`docs/24`](24-piano-pipeline.md)
-- **Stub-first MCP (the `IReviewProvider` seam):** [`docs/23`](23-piano-mcp-stub-first.md)
+- **MVP roadmap:** [`docs/22`](22-mvp-execution-roadmap.md) (MVP-3)
+- **Pipeline (produces the `StructuralBlock`s):** [`docs/24`](24-pipeline-plan.md)
+- **Stub-first MCP (the `IReviewProvider` seam):** [`docs/23`](23-mcp-stub-first-plan.md)
 - **Guardrails (grounding, no-verdict, no phone-home):** [`GUARDRAILS.md`](../GUARDRAILS.md) G2/G3/G4/G7
 - **Types:** [`ReviewCheck.Core`](../src/ReviewCheck.Core)
 

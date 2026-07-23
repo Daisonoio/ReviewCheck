@@ -202,13 +202,13 @@ Recommended order (each item is verifiable).
 
 | You need… | Go to |
 |---|---|
-| How it's used (walkthrough) | [12](12-esempio-flow.md) |
+| How it's used (walkthrough) | [12](12-flow-example.md) |
 | **Implementable contracts** | **this document** |
-| MVP roadmap + technical gates | [22](22-roadmap-esecutiva-mvp.md) |
-| Build plans (MVP-1/2/3) | [23](23-piano-mcp-stub-first.md) · [24](24-piano-pipeline.md) · [25](25-piano-llm.md) |
-| Agent: WHAT/HOW + recovery | [21](21-piano-sviluppo-agente.md) |
+| MVP roadmap + technical gates | [22](22-mvp-execution-roadmap.md) |
+| Build plans (MVP-1/2/3) | [23](23-mcp-stub-first-plan.md) · [24](24-pipeline-plan.md) · [25](25-llm-plan.md) |
+| Agent: WHAT/HOW + recovery | [21](21-development-plan.md) |
 | Invariants and enforcement | [`GUARDRAILS.md`](../GUARDRAILS.md) |
 
-> **Note (essentials branch):** the extended rationale — why the product exists, cognitive basis,
-> market, UX, extended architecture, security — lives on the full branch
-> `claude/guided-code-review-tool-6j7eyb` (analysis documents `00`–`11`, `14`–`18`).
+> **Note (essential set):** the extended rationale — why the product exists, cognitive basis,
+> market, UX, extended architecture, security — lives in the
+> [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo (analysis documents `00`–`11`, `14`–`18`).
