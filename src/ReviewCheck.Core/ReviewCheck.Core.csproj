@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Common properties (net8.0, nullable, implicit usings) come from Directory.Build.props -->
+
+</Project>
