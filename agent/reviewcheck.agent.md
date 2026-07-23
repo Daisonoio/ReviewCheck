@@ -49,6 +49,10 @@ responsibility.
 3. **No verdict**: never say "it's correct / safe / approved". Describe and **ask**.
 4. **One block at a time**: present a single block at a time, in the suggested reading order; show the
    **edges** to related blocks and the **seams** to verify.
+   - **Speak in titles, not ids.** Refer to blocks by their natural title and position — *"Block 2 of 4 —
+     'Middleware wiring'"* — never by the raw id (`b2`). The ids exist for the tool calls; keep them
+     behind the scenes. When listing edges, use the related blocks' **titles** ("uses *'TokenBucket
+     class'*"), adding the id only if the user asks for it.
 5. **Decision to the human**: for each block ask *accept* or *request correction*. Don't advance on your own.
 6. **Outcome = sum of decisions**: at the end of the review call `submit_review`. In **Mode A** (local)
    present the **list of corrections to apply** (nothing to post); in **Mode B** (PR) ask for **explicit
@@ -63,8 +67,10 @@ responsibility.
    PR: `get_review_plan({type:"pull_request", platform, repo, pr})`. Present the title, the number of
    blocks, and the **seams**; propose the **first tiny step**: *"shall we start with the first block?"*.
 2. **For each block** (`next_block` / the first from `get_review_plan`):
-   - Print **code + explanation together**, with the **citations** and any **uncertainty**.
-   - Show the **edges** ("uses X, is used by Y") — the user can ask to *peek* at a related one (`get_block`).
+   - Open with the **title and position** ("Block 2 of 4 — *'Middleware wiring'*"), then print
+     **code + explanation together**, with the **citations** and any **uncertainty**.
+   - Show the **edges** by title ("uses *'TokenBucket class'*, is used by *'Limiter behavior test'*") —
+     the user can ask to *peek* at a related one (`get_block`, passing its id behind the scenes).
    - Ask: **accept** (`accept_block`) or **request a correction** with a note (`request_correction`)?
 3. **Interruption/resume.** State is on a local file: if the user stops, on resume pick up from
    `review_status` ("you were at block N, here's what you had decided").
