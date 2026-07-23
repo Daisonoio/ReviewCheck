@@ -1,6 +1,6 @@
 # ReviewCheck
 
-**Guided, step-by-step code review that helps you actually understand the code — not just approve it.**
+**Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
 ![status](https://img.shields.io/badge/status-design%20phase-yellow)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
@@ -143,7 +143,7 @@ flowchart TB
     Host["Host agent (Claude Code / Cursor / Copilot)"] -->|MCP tools| RC
     subgraph RC["ReviewCheck — local MCP server"]
         SR["Source reader<br/>(git diff · or platform PR)"]
-        PL["Analysis pipeline<br/>tree-sitter · graph · blocks · order · seams"]
+        PL["Analysis pipeline<br/>Roslyn · graph · blocks · order · seams"]
         LA["LLM adapter<br/>(your key / local model)"]
         SS["Session store<br/>local JSON file"]
     end
@@ -151,7 +151,7 @@ flowchart TB
     RC -->|"targeted context"| LLM["Your LLM"]
 ```
 
-- **Deterministic backbone** (tree-sitter parsing, dependency graph, reading order, seams) does the
+- **Deterministic backbone** (Roslyn parsing + semantic model, dependency graph, reading order, seams) does the
   reliable work; the **LLM only interprets** (intent labels + explanations) and its output is bound to
   citations. This keeps the tool robust and testable, and means the product never *depends* on the LLM
   being correct.
@@ -164,7 +164,7 @@ flowchart TB
 | Phase | Focus |
 |---|---|
 | **0 — Validation gate** | Minimal prototype + study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? Go/no-go before building. |
-| **1 — v1** | Local MCP add-on: Mode A (local diff), TS/JS + Python, BYO-key LLM, the full block-by-block flow; then Mode B (GitHub). |
+| **1 — v1** | Local MCP add-on: Mode A (local diff), C# (Roslyn), BYO-key LLM, the full block-by-block flow; then Mode B (GitHub). |
 | **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. |
 | **3** | Recommended local models, per-repo codebase memory, personalization — all local. |
 
@@ -175,7 +175,7 @@ docs/                 Essential set: contracts (13), MVP plans (22–25), agent 
                       → Index: docs/README.md. Full analysis lives on the main branch.
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
-packages/ · apps/     Monorepo scaffolding: core · pipeline · llm · platform · session; apps/mcp
+src/ · tests/         .NET solution: ReviewCheck.Core · .Pipeline · .Llm · .Platform · .Session · .Mcp
 .github/workflows/    Security CI (gitleaks, Semgrep, CodeQL, Trivy, SBOM)
 AGENTS.md             Context for agents working on this repo
 GUARDRAILS.md         Guardrails and how each is enforced
@@ -206,7 +206,7 @@ This is an early-stage, greenfield project — a good moment to shape it. Ways t
 
 - **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-roadmap-esecutiva-mvp.md)) starting
   with the stub-first MCP server ([`docs/23`](docs/23-piano-mcp-stub-first.md)).
-- **Language support** — additional tree-sitter grammars beyond TS/JS + Python.
+- **Language support** — additional language analyzers beyond C# (Roslyn).
 - **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
   deferred until after the MVP (see [`docs/22`](docs/22-roadmap-esecutiva-mvp.md) §5).
 - **Cognitive-accessibility research** — help design/run the Phase-0 study with neurodivergent
@@ -231,5 +231,6 @@ risk; the residual focus is **local token handling**, **supply-chain integrity**
 
 ---
 
-<sub>ReviewCheck is built on a simple conviction: the AI should help you **understand** the code, not
-understand it **for you**. The decision — and the responsibility — stay yours.</sub>
+<sub>ReviewCheck is built on a simple conviction: when an agent writes the code, the AI should help you
+**understand** it — not understand it **for you**. Understanding is how you keep ownership; the decision
+— and the responsibility — stay yours.</sub>
