@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReviewCheck.Core.Tests", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReviewCheck.Mcp", "src\ReviewCheck.Mcp\ReviewCheck.Mcp.csproj", "{01DBDEA5-F45F-48D7-B1E9-A800957CACEC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReviewCheck.Mcp.Tests", "tests\ReviewCheck.Mcp.Tests\ReviewCheck.Mcp.Tests.csproj", "{C0C6C30A-7912-4202-8942-5A087CF98B3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +36,15 @@ Global
 		{01DBDEA5-F45F-48D7-B1E9-A800957CACEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01DBDEA5-F45F-48D7-B1E9-A800957CACEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01DBDEA5-F45F-48D7-B1E9-A800957CACEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0C6C30A-7912-4202-8942-5A087CF98B3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0C6C30A-7912-4202-8942-5A087CF98B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0C6C30A-7912-4202-8942-5A087CF98B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0C6C30A-7912-4202-8942-5A087CF98B3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5D487C3E-ADF2-4A0B-A1B4-7851857BB914} = {01A4163E-2744-4779-96D0-3DE995F07797}
 		{9265A20C-ECFA-4281-94FB-C047F808C77C} = {1F9E5F93-6C3E-44EA-B05E-EC5BBC625113}
 		{01DBDEA5-F45F-48D7-B1E9-A800957CACEC} = {01A4163E-2744-4779-96D0-3DE995F07797}
+		{C0C6C30A-7912-4202-8942-5A087CF98B3C} = {1F9E5F93-6C3E-44EA-B05E-EC5BBC625113}
 	EndGlobalSection
 EndGlobal
