@@ -1,0 +1,114 @@
+# 12 — Usage flow example
+
+A concrete end-to-end walkthrough. Protagonist: **Marco**, a developer with ADHD (fragmented
+attention). The cognitive technique at play is noted in the margin.
+
+> Canonical v1 scenario: **Mode A** (source = **local diff, pre-PR**) — Marco reviews *what the agent
+> just wrote* before opening the PR. In Mode B (source = a PR) the experience is identical; only what's
+> read and what's done with the outcome change (in B it's posted to the platform).
+
+## The scenario
+
+**"Add rate limiting to public API"** — the agent has just written **~240 lines across 7 files**
+(uncommitted changes) in an **ASP.NET Core Web API (C#)**: a new `TokenBucket` class, wiring in a
+middleware, a parameter in `appsettings.json`, updates to 2 controllers, and the related tests. It's the
+kind of change Marco normally commits "on the fly" without really looking at it.
+
+Segmentation produced by the pipeline (6 blocks, reading order):
+
+1. `RateLimiting/TokenBucket.cs` — the `TokenBucket` class (definition/core)
+2. `appsettings.json` — `RateLimit = 100/min` (parameters)
+3. `Middleware/RateLimitingMiddleware.cs` — wiring the limiter onto requests (usage)
+4. `Controllers/SearchController.cs` — the `/search` endpoint, protected (effect)
+5. `Controllers/UsersController.cs` — the `/users` endpoint, protected (effect)
+6. `Tests/TokenBucketTests.cs` — tests (verification)
+
+---
+
+## The flow — inside Claude Code (local MCP add-on), Mode A (pre-PR)
+
+Marco has just had the agent write the rate limiter. **Before opening the PR**, he wants to check it.
+The add-on runs **locally** on the **uncommitted diff** (`git diff`), using **his own LLM** (host or
+BYO). No token, no network, no browser.
+
+```
+Marco:  review the changes I just wrote (before I open the PR)
+
+Claude Code:  [get_review_plan({type:"local", ref:"working"})]   ← local git diff, no token/network
+   Uncommitted changes: rate limiting on the public API. 6 blocks.
+   Seam to check (from the graph): "Allow() can return false → every caller must handle the rejection
+   (respond 429)".
+
+   ── Block 1/6 ──────────────────  [▓░░░░░]
+   RateLimiting/TokenBucket.cs  (new)
+
+     public sealed class TokenBucket
+     {
+         public TokenBucket(int capacity, int refillRate) { ... }
+
+         public bool Allow(string key)
+         {
+             Refill(key);
+             if (_tokens[key] > 0)
+             {
+                 _tokens[key]--;
+                 return true;
+             }
+             return false;
+         }
+     }
+
+   WHAT: token-bucket class, the core of the PR.        (cites TokenBucket.cs:1-15)
+   WHY:  decides whether a request passes or is rejected.
+   LINKS: used by the middleware (block 3), parameters from block 2.
+   Uncertainty: could not resolve `Refill` (defined in another partial file).
+
+   Accept this block, or request a correction?
+
+Marco:  what if key is null? request a correction
+Claude Code:  [request_correction(block=1, "handle key=null in Allow()")]
+   ✎ Block 1 → CORRECTION requested. Move on to block 2?
+
+Marco:  yes
+Claude Code:  [next_block()]  ── Block 2/6 ── appsettings.json
+     "RateLimit": "100/min"                          (cites appsettings.json:14)
+   WHAT: the threshold read by the TokenBucket. WHY: makes the limit configurable without recompiling.
+   Accept?
+Marco:  accept
+Claude Code:  [accept_block(block=2)]  ✓  ...
+
+   ... (blocks 3–6) ...
+
+Claude Code:  [review_status] 6/6 decided: 5 accepted, 1 correction.
+   [submit_review]  → outcome: CORRECTIONS TO APPLY (Mode A: nothing to post).
+   To fix before the PR:
+     • block 1 (TokenBucket.cs): "handle key=null in Allow()"
+   Shall I apply them, or will you? Then you can open the PR.
+Marco:  you apply them, then I'll open the PR
+```
+
+> *(Had the source been a PR instead — Mode B — the last step would be:
+> `submit_review(confirm=true)` → "Request-changes posted on the PR". Same logic, outcome posted.)*
+
+Key points upheld:
+- **Pre-PR and fully local**: Marco finds the agent's problem **before** it enters a PR; the code never
+  leaves his machine; no token/network; the LLM is his own (host/BYO).
+- **No self-approval problem**: there's no formal approval to post (D4 doesn't apply).
+- **Code + explanation in the same output**, with **line citations** and **declared uncertainty** (grounding).
+- **Seams** (F13) from the graph: bugs *between* blocks aren't hidden (against C2).
+- **Human-in-the-loop**: the outcome is the **sum of Marco's decisions**; the AI neither judges nor
+  approves. The correction becomes an **immediately actionable to-do**, not a comment left waiting.
+- **Save-and-resume** on a local file.
+
+---
+
+## The contrast in one line
+
+| Without ReviewCheck | With ReviewCheck |
+|---|---|
+| 240 lines, 7 files, no order → defensive "LGTM" | 6 blocks, guided order, explained with the code beside them |
+| Agent bug found (maybe) later, in the PR | Agent bug found **before** the PR, locally |
+| "I opened the PR but I'm not sure what it does" | Outcome = sum of conscious decisions + corrections applied |
+
+This flow is the behavioral reference for the implementation: the [build specification](13-specifica-build.md)
+defines its constraints, local state, and MCP tools.

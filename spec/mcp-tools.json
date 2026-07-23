@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewCheck MCP tool contracts",
+  "description": "Tool contracts for the local MCP server (an add-on running inside the host agent). Reference: docs/13. CONSTRAINTS: (1) every tool that presents a block ALWAYS returns 'code' and 'explanation' together (co-presence, docs/13 §1.1); (2) the explanation is anchored to line citations (grounding, docs/13 §1 2-bis); (3) the review outcome is the SUM of the per-block human decisions (accept/request_correction) + an explicit confirmation: the AI neither judges nor approves (human-in-the-loop, docs/13 §1.2). No backend/DB: the 'session' is a handle to a LOCAL state file (see session-state.schema.json).",
+  "$defs": {
+    "Block": {
+      "type": "object",
+      "description": "A unit of intent. code and explanation are both REQUIRED (co-presence). The code is the source of truth; the explanation is anchored to the code (grounding).",
+      "required": [ "id", "title", "intent", "code", "explanation" ],
+      "properties": {
+        "id": { "type": "string" },
+        "title": {
+          "type": "string",
+          "description": "Natural-language label"
+        },
+        "intent": {
+          "type": "string",
+          "enum": [ "definition", "config", "wiring", "usage", "test", "refactor", "other" ]
+        },
+        "code": {
+          "type": "string",
+          "description": "The block's code (diff + minimal context). ALWAYS present. Source of truth."
+        },
+        "explanation": {
+          "type": "object",
+          "required": [ "what", "why", "link", "citations" ],
+          "description": "An explanation that DESCRIBES AND ASKS, never a verdict. Anchored to the code (grounding).",
+          "properties": {
+            "what": { "type": "string" },
+            "why": { "type": "string" },
+            "link": {
+              "type": "string",
+              "description": "Edges to related blocks (from the graph's structural facts, not invented)"
+            },
+            "citations": {
+              "type": "array",
+              "minItems": 1,
+              "description": "The code lines the explanation is anchored to (grounding).",
+              "items": {
+                "type": "object",
+                "required": [ "file", "lines" ],
+                "properties": {
+                  "file": { "type": "string" },
+                  "lines": {
+                    "type": "string",
+                    "description": "e.g. '12' or '12-15'"
+                  }
+                }
+              }
+            },
+            "uncertainty": {
+              "type": [ "string", "null" ],
+              "description": "Where the model is uncertain / anchoring is weak; null if absent."
+            }
+          }
+        },
+        "related_block_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Edges (F3): related blocks, peekable on demand."
+        },
+        "estimated_minutes": { "type": "integer" }
+      }
+    },
+    "Position": {
+      "type": "object",
+      "required": [ "index", "total" ],
+      "properties": {
+        "index": { "type": "integer" },
+        "total": { "type": "integer" }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "get_review_plan",
+      "description": "Reads a set of changes and returns the plan: blocks, reading order, interaction points (seams), and the FIRST complete block (code + explanation). Opens a local session. SOURCE: Mode A (PRIMARY) = LOCAL pre-PR diff (git, no token/network): review what the agent/you just wrote before opening the PR. Mode B (secondary) = a PR on the platform (via local token).",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "source" ],
+        "properties": {
+          "source": {
+            "type": "object",
+            "description": "What to review.",
+            "oneOf": [
+              {
+                "required": [ "type" ],
+                "properties": {
+                  "type": { "const": "local" },
+                  "ref": {
+                    "type": "string",
+                    "description": "'working' (uncommitted changes, default) | 'staged' | a git range (e.g. 'origin/main...HEAD') | a commit."
+                  }
+                }
+              },
+              {
+                "required": [ "type", "platform", "repo", "pr" ],
+                "properties": {
+                  "type": { "const": "pull_request" },
+                  "platform": {
+                    "type": "string",
+                    "enum": [ "github", "azure_devops" ]
+                  },
+                  "repo": { "type": "string" },
+                  "pr": { "type": [ "integer", "string" ] }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "session", "title", "blocks", "first_block" ],
+        "properties": {
+          "session": {
+            "type": "string",
+            "description": "Handle to the local session (state file)."
+          },
+          "title": { "type": "string" },
+          "estimated_minutes": { "type": "integer" },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [ "id", "order_index", "title", "intent" ],
+              "properties": {
+                "id": { "type": "string" },
+                "order_index": { "type": "integer" },
+                "title": { "type": "string" },
+                "intent": { "type": "string" },
+                "estimated_minutes": { "type": "integer" }
+              }
+            }
+          },
+          "interaction_points": {
+            "type": "array",
+            "description": "Seams to verify (F13), derived from the graph — attention pointers, not verdicts.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": { "type": "string" },
+                "block_ids": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "first_block": { "$ref": "#/$defs/Block" }
+        }
+      }
+    },
+    {
+      "name": "next_block",
+      "description": "Advances to the next recommended block and returns it COMPLETE (code + explanation together). The client must print code and explanation together, never on a separate request.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session" ],
+        "properties": { "session": { "type": "string" } }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "block", "position", "progress_pct" ],
+        "properties": {
+          "block": { "$ref": "#/$defs/Block" },
+          "position": { "$ref": "#/$defs/Position" },
+          "progress_pct": { "type": "number" }
+        }
+      }
+    },
+    {
+      "name": "get_block",
+      "description": "Returns a specific block COMPLETE (code + explanation together). Also used to 'peek' at a related block without advancing (F4).",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session", "block_id" ],
+        "properties": {
+          "session": { "type": "string" },
+          "block_id": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "block" ],
+        "properties": { "block": { "$ref": "#/$defs/Block" } }
+      }
+    },
+    {
+      "name": "accept_block",
+      "description": "The user ACCEPTS the block (they understood it and take responsibility for it). A human decision recorded in the local state file.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session", "block_id" ],
+        "properties": {
+          "session": { "type": "string" },
+          "block_id": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "ok", "block_status" ],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "block_status": {
+            "type": "string",
+            "enum": [ "accepted" ]
+          }
+        }
+      }
+    },
+    {
+      "name": "request_correction",
+      "description": "The user REQUESTS A CORRECTION on the block, with a note. Marks the block as 'to correct' and stores the note (it becomes a comment in the request-changes).",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session", "block_id", "note" ],
+        "properties": {
+          "session": { "type": "string" },
+          "block_id": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "ok", "block_status", "note_id" ],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "block_status": {
+            "type": "string",
+            "enum": [ "correction_requested" ]
+          },
+          "note_id": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "review_status",
+      "description": "Session status: position, progress, accepted blocks, and blocks to correct.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session" ],
+        "properties": { "session": { "type": "string" } }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "index", "total", "progress_pct", "accepted", "corrections" ],
+        "properties": {
+          "index": { "type": "integer" },
+          "total": { "type": "integer" },
+          "progress_pct": { "type": "number" },
+          "current_block_id": { "type": "string" },
+          "accepted": { "type": "integer" },
+          "corrections": { "type": "integer" }
+        }
+      }
+    },
+    {
+      "name": "submit_review",
+      "description": "Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Behavior depends on the SOURCE: (A) LOCAL (pre-PR): posts NOTHING — returns a summary + a list of corrections to apply; outcome 'ready_to_proceed' (all accepted) or 'corrections_to_apply' (>=1 correction). Here the self-approval problem does not exist. (B) PULL REQUEST: posts the outcome to the platform with 'confirm':true (without confirmation = preview); outcome 'approve' or 'request_changes'; FALLBACK 'comment_only' if the platform forbids self-reviewing your own PR.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session" ],
+        "properties": {
+          "session": { "type": "string" },
+          "confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "Mode B only: must be true to post. In Mode A it is ignored (nothing is posted)."
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "outcome", "posted", "summary" ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [ "ready_to_proceed", "corrections_to_apply", "approve", "request_changes", "comment_only" ],
+            "description": "Mode A (local): ready_to_proceed | corrections_to_apply. Mode B (PR): approve | request_changes | comment_only (self-review fallback)."
+          },
+          "posted": {
+            "type": "boolean",
+            "description": "true only in Mode B with confirm=true and after publishing. Always false in Mode A."
+          },
+          "summary": { "type": "string" },
+          "notes": {
+            "type": "array",
+            "description": "The requested corrections: in Mode A they are an actionable to-do list; in Mode B they become comments.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "block_id": { "type": "string" },
+                "note": { "type": "string" }
+              }
+            }
+          },
+          "undecided_blocks": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Undecided blocks: if non-empty, submit does not proceed."
+          }
+        }
+      }
+    }
+  ],
+  "forbidden_tools": {
+    "description": "Tools that MUST NOT exist: the AI neither judges nor decides correctness. The outcome comes only from accept_block/request_correction (human) + an explicit confirmation in submit_review.",
+    "examples": [ "auto_approve", "is_this_correct", "verdict", "ai_review", "approve_without_human_decisions" ]
+  }
+}
