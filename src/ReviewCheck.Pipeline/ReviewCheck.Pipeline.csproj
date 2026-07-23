@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReviewCheck.Core\ReviewCheck.Core.csproj" />
+    <ProjectReference Include="..\ReviewCheck.Platform\ReviewCheck.Platform.csproj" />
+  </ItemGroup>
+
+</Project>
