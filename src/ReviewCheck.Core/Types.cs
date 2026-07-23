@@ -70,6 +70,18 @@ public sealed record Block(
     IReadOnlyList<string>? RelatedBlockIds = null,
     int? EstimatedMinutes = null);
 
+/// <summary>
+/// The result of analyzing a source: an ordered list of blocks (order = index) plus the
+/// seams between them. This is the exchange type of the provider seam (docs/23 §1.1): the
+/// MCP tools and the SessionStore consume it without knowing whether it came from a fixture
+/// or the real pipeline.
+/// </summary>
+public sealed record AnalyzedReview(
+    string Title,
+    IReadOnlyList<Block> Blocks,
+    IReadOnlyList<InteractionPoint> InteractionPoints,
+    int? EstimatedMinutes = null);
+
 /// <summary>Position in the reading order (1-based index over the total).</summary>
 public sealed record Position(int Index, int Total);
 
