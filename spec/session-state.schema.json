@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewCheck local session state",
+  "description": "Schema of the LOCAL STATE FILE for the review (no external database). Saved on the user's machine (e.g. .reviewcheck/session-<pr>.json or a user cache) for save-and-resume (F7). Contains sensitive data (code) → restricted permissions and cleanup. It is never sent to a ReviewCheck server.",
+  "type": "object",
+  "required": [ "session", "source", "blocks", "progress" ],
+  "properties": {
+    "session": {
+      "type": "string",
+      "description": "Local session id."
+    },
+    "source": {
+      "type": "object",
+      "description": "What is under review. Mode A (primary) = LOCAL pre-PR diff; Mode B = a PR.",
+      "required": [ "type" ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [ "local", "pull_request" ]
+        },
+        "ref": {
+          "type": "string",
+          "description": "type=local only: 'working' | 'staged' | git range | commit."
+        },
+        "platform": {
+          "type": "string",
+          "enum": [ "github", "azure_devops" ],
+          "description": "type=pull_request only."
+        },
+        "repo": {
+          "type": "string",
+          "description": "type=pull_request only."
+        },
+        "pr": {
+          "type": [ "integer", "string" ],
+          "description": "type=pull_request only."
+        }
+      }
+    },
+    "head_sha": {
+      "type": "string",
+      "description": "Reference commit of the analysis (to invalidate if the diff changes)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": { "type": "string" },
+    "blocks": {
+      "type": "array",
+      "description": "Analyzed blocks (code + explanation with grounding). See Block in mcp-tools.json.",
+      "items": {
+        "type": "object",
+        "required": [ "id", "order_index", "title", "intent", "code", "explanation", "status" ],
+        "properties": {
+          "id": { "type": "string" },
+          "order_index": { "type": "integer" },
+          "title": { "type": "string" },
+          "intent": {
+            "type": "string",
+            "enum": [ "definition", "config", "wiring", "usage", "test", "refactor", "other" ]
+          },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "code": { "type": "string" },
+          "explanation": {
+            "type": "object",
+            "required": [ "what", "why", "link", "citations" ],
+            "properties": {
+              "what": { "type": "string" },
+              "why": { "type": "string" },
+              "link": { "type": "string" },
+              "citations": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [ "file", "lines" ],
+                  "properties": {
+                    "file": { "type": "string" },
+                    "lines": { "type": "string" }
+                  }
+                }
+              },
+              "uncertainty": { "type": [ "string", "null" ] }
+            }
+          },
+          "related_block_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "estimated_minutes": { "type": "integer" },
+          "status": {
+            "type": "string",
+            "enum": [ "pending", "accepted", "correction_requested" ],
+            "description": "Human decision for the block (F13/outcome)."
+          },
+          "note": {
+            "type": [ "string", "null" ],
+            "description": "Correction note (if status = correction_requested)."
+          }
+        }
+      }
+    },
+    "block_relations": {
+      "type": "array",
+      "description": "Edges of the deterministic graph (for order, map, seams).",
+      "items": {
+        "type": "object",
+        "required": [ "from", "to", "kind" ],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": [ "uses", "defines", "depends_on", "tests", "configures" ]
+          }
+        }
+      }
+    },
+    "interaction_points": {
+      "type": "array",
+      "description": "Seams to verify (F13), derived from the graph.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "block_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "required": [ "current_block_id", "completed_block_ids" ],
+      "properties": {
+        "current_block_id": {
+          "type": [ "string", "null" ],
+          "description": "Resume point (F7)."
+        },
+        "completed_block_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "resumed_context": {
+          "type": [ "object", "null" ],
+          "description": "What you had already understood, for resuming."
+        }
+      }
+    },
+    "prefs": {
+      "type": "object",
+      "description": "Local preferences (F10), e.g. output density/verbosity.",
+      "properties": {
+        "density": {
+          "type": "string",
+          "enum": [ "compact", "comfortable" ]
+        },
+        "verbosity": {
+          "type": "string",
+          "enum": [ "short", "normal", "detailed" ]
+        }
+      }
+    }
+  }
+}
