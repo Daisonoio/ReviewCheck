@@ -52,6 +52,37 @@ public sealed class LlmAdapterTests
         Assert.Same(structural.Citations, block.Explanation.Citations);
     }
 
+    [Fact]
+    public async Task RelatedBlockCode_ReachesThePrompt_AndCrossReferencePasses()
+    {
+        var self = Sample.Block(); // RelatedBlockIds = ["b2"]
+        var related = self with
+        {
+            Id = "b2",
+            Title = "Method Program.Main — added",
+            Citations = [new Citation("src/Program.cs", "3")],
+            Code = "new Greeter().Hello(\"x\");",
+        };
+
+        const string answer =
+            """
+            {"what": "Greeter.Hello formats a greeting for the given name and returns the string.",
+             "why": "It is the greeting builder the entry point calls.",
+             "link": "Called from src/Program.cs (Method Program.Main).",
+             "uncertainty_semantic": null}
+            """;
+        var fake = new FakeLlmProvider().Returns(answer).Fails(); // second block degrades
+
+        var blocks = await new LlmAdapter(fake).ExplainAsync([self, related]);
+
+        // The related block's code is in the first block's prompt.
+        Assert.Contains("new Greeter().Hello", fake.Calls[0].User);
+        Assert.Contains("Method Program.Main", fake.Calls[0].User);
+        // The cross-reference to the related file passed the rubric (block not degraded).
+        Assert.DoesNotContain("LLM explanation unavailable", blocks[0].Explanation.Uncertainty ?? "");
+        Assert.Contains("src/Program.cs", blocks[0].Explanation.Link);
+    }
+
     // ---- T6: retry once with the violation quoted ----
 
     [Fact]

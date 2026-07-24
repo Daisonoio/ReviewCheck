@@ -25,8 +25,13 @@ public static partial class ExplanationRubric
         RegexOptions.IgnoreCase)]
     private static partial Regex FileReference();
 
-    /// <summary>Returns the violated rule as a sentence, or null when the output is acceptable.</summary>
-    public static string? Violation(StructuralBlock block, LlmExplanation e)
+    /// <summary>
+    /// Returns the violated rule as a sentence, or null when the output is acceptable.
+    /// <paramref name="related"/> are the blocks whose full code is in the prompt: references to
+    /// their files/symbols are legitimate, so they widen the "known" set for the no-hallucination
+    /// check (an empty list preserves the single-block behavior).
+    /// </summary>
+    public static string? Violation(StructuralBlock block, LlmExplanation e, IReadOnlyList<StructuralBlock> related)
     {
         // Presence: what/why non-empty and non-trivial (docs/25 §5 row 1).
         if (e.What.Length < 10)
@@ -42,12 +47,17 @@ public static partial class ExplanationRubric
         if (VerdictLanguage().Match(assertive) is { Success: true } verdict)
             return $"verdict language ('{verdict.Value}') — describe and ask; the human judges, not you";
 
-        // Grounded references: no files outside the provided code/citations/facts (rows 3-4).
+        // Grounded references: no files outside the provided material (rows 3-4). The related
+        // blocks' files/titles/code count as provided — their code is in the prompt.
         var known = string.Join('\n',
             block.Citations.Select(c => c.File)
                 .Append(block.Code)
                 .Append(block.Title)
-                .Concat(block.StructuralFacts));
+                .Concat(block.StructuralFacts)
+                .Concat(related.SelectMany(r => r.Citations.Select(c => c.File)
+                    .Append(r.Code)
+                    .Append(r.Title)
+                    .Concat(r.StructuralFacts))));
         var everything = $"{assertive}\n{e.UncertaintySemantic}";
         foreach (Match reference in FileReference().Matches(everything))
             if (!known.Contains(reference.Value, StringComparison.OrdinalIgnoreCase))

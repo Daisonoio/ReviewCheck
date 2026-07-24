@@ -190,6 +190,15 @@ public class AnalysisPipelineTests
     }
 
     [Fact]
+    public void ResolvedUse_EmitsAConcreteCallFact()
+    {
+        var wiring = ByTitle(Run(), "Program.cs");
+
+        // Program.cs calls bucket.Allow(...) → a precise fact naming the exact member.
+        Assert.Contains(wiring.StructuralFacts, f => f == "calls 'TokenBucket.Allow'");
+    }
+
+    [Fact]
     public void Seams_ComeFromGraphEdges_AndReferenceRealBlocks()
     {
         var result = Run();
