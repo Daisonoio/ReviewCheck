@@ -45,12 +45,13 @@ public sealed class PipelineProviderTests : IDisposable
     }
 
     // FactsNarrator keeps these tests deterministic; LlmAdapter is exercised in ReviewCheck.Llm.Tests.
-    private PipelineProvider NewProvider() => new(new FakeDiffReader(), new AnalysisPipeline(), new FactsNarrator());
+    private PipelineProvider NewProvider() => new(new FakeDiffReader(), new AnalysisPipeline());
+    private static readonly IBlockNarrator Facts = new FactsNarrator();
 
     [Fact]
     public async Task RealBlocks_AllPassBlockGuard_CoPresentAndGrounded()
     {
-        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"));
+        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"), Facts);
 
         Assert.NotEmpty(review.Blocks);
         Assert.All(review.Blocks, b =>
@@ -63,7 +64,7 @@ public sealed class PipelineProviderTests : IDisposable
     [Fact]
     public async Task Titles_AreSpeaking_NotRawIds()
     {
-        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"));
+        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"), Facts);
 
         Assert.Contains(review.Blocks, b => b.Title.Contains("Greeter.Hello"));
         Assert.All(review.Blocks, b => Assert.False(b.Title.StartsWith('b') && b.Title.Length <= 3,
@@ -90,7 +91,7 @@ public sealed class PipelineProviderTests : IDisposable
     [Fact]
     public async Task DefinitionComesBeforeItsUse_InTheReadingOrder()
     {
-        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"));
+        var review = await NewProvider().AnalyzeAsync(new Source.Local("working"), Facts);
 
         var definition = review.Blocks.Single(b => b.Title.Contains("Greeter.Hello"));
         var wiring = review.Blocks.Single(b => b.Title.Contains("Program.cs"));
@@ -103,7 +104,7 @@ public sealed class PipelineProviderTests : IDisposable
     public async Task PullRequestSource_IsRejected_NoNetworkPath()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            NewProvider().AnalyzeAsync(new Source.PullRequest("github", "org/repo", "1")));
+            NewProvider().AnalyzeAsync(new Source.PullRequest("github", "org/repo", "1"), Facts));
     }
 
     public void Dispose()

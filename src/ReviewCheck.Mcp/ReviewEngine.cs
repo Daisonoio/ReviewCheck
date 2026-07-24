@@ -1,3 +1,4 @@
+using ModelContextProtocol.Server;
 using ReviewCheck.Core;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Session;
@@ -14,12 +15,18 @@ namespace ReviewCheck.Mcp;
 /// </list>
 /// The outcome is only ever the sum of the human decisions — there is no verdict path (G-NOVERDICT).
 /// </summary>
-public sealed class ReviewEngine(IReviewProvider provider, SessionStore store)
+public sealed class ReviewEngine(IReviewProvider provider, SessionStore store, NarratorResolver? narrators = null)
 {
-    /// <summary>Analyzes the source, opens a session, and returns the plan + the FIRST co-present block.</summary>
-    public async Task<ReviewPlanResult> GetReviewPlanAsync(Source source)
+    /// <summary>
+    /// Analyzes the source, opens a session, and returns the plan + the FIRST co-present block.
+    /// The narrator (key LLM / host sampling / facts) is chosen here from the host's capabilities,
+    /// and a matching <c>notice</c> is surfaced so the agent can show the mode banner.
+    /// </summary>
+    public async Task<ReviewPlanResult> GetReviewPlanAsync(Source source, McpServer? server = null)
     {
-        var analyzed = await provider.AnalyzeAsync(source);
+        var (narrator, notice) = (narrators ?? NarratorResolver.FactsOnly).Resolve(server);
+
+        var analyzed = await provider.AnalyzeAsync(source, narrator);
         if (analyzed.Blocks.Count == 0)
             throw new InvalidOperationException("The analysis produced no blocks.");
 
@@ -34,7 +41,7 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store)
             .ToList();
 
         var first = BlockGuard.Ensure(analyzed.Blocks[0]);
-        return new ReviewPlanResult(session, analyzed.Title, analyzed.EstimatedMinutes, summaries, seams, BlockView.From(first));
+        return new ReviewPlanResult(session, analyzed.Title, analyzed.EstimatedMinutes, summaries, seams, BlockView.From(first), notice);
     }
 
     /// <summary>Advances the pointer and returns the next block co-present, with position and progress.</summary>

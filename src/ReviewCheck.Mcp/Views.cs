@@ -77,7 +77,8 @@ public sealed record ReviewPlanResult(
     [property: JsonPropertyName("estimated_minutes")] int? EstimatedMinutes,
     [property: JsonPropertyName("blocks")] IReadOnlyList<BlockSummaryView> Blocks,
     [property: JsonPropertyName("interaction_points")] IReadOnlyList<InteractionPointView> InteractionPoints,
-    [property: JsonPropertyName("first_block")] BlockView FirstBlock);
+    [property: JsonPropertyName("first_block")] BlockView FirstBlock,
+    [property: JsonPropertyName("notice")] string? Notice = null);
 
 public sealed record NextBlockResult(
     [property: JsonPropertyName("block")] BlockView Block,

@@ -1,4 +1,5 @@
 using ReviewCheck.Core;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Session;
@@ -161,7 +162,7 @@ public sealed class ReviewEngineTests : IDisposable
         var engine = NewEngine();
         // Open a PR-source session directly through the store so submit sees the reserved PR seam.
         var store = new SessionStore(_root);
-        var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local());
+        var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local(), new FactsNarrator());
         var session = store.Create(analyzed, new Source.PullRequest("github", "org/repo", "42"));
         foreach (var b in analyzed.Blocks)
             store.SetStatus(session, b.Id, BlockStatus.Accepted);

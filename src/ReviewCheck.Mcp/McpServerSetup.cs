@@ -37,32 +37,23 @@ public static class McpServerSetup
             builder.Services.AddSingleton<IDiffReader>(_ => new LocalDiffReader(repoRoot));
             builder.Services.AddSingleton<AnalysisPipeline>();
 
-            // Narrative seam (docs/25 §11): LLM narration when the user configured a key,
-            // deterministic facts otherwise. REVIEWCHECK_NARRATOR=facts forces the floor
-            // even with a key present (demos, offline, cost control).
+            // Narrator is chosen PER REVIEW (docs/25 §11): the key LLM if configured, else the host
+            // model via MCP sampling if the host supports it, else the deterministic facts narrative.
+            // The host's sampling capability is known only after the MCP handshake, so the resolver
+            // decides at request time. REVIEWCHECK_NARRATOR=facts forces facts (demos, offline, cost).
             var factsForced = string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_NARRATOR"), "facts",
                 StringComparison.OrdinalIgnoreCase);
-            if (!factsForced && AnthropicByoProvider.IsConfigured)
-            {
-                builder.Services.AddSingleton<ILlmProvider>(_ =>
-                    new AnthropicByoProvider(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
-                builder.Services.AddSingleton<IBlockNarrator, LlmAdapter>();
-                // stderr is safe (stdout is the JSON-RPC channel): a one-line startup banner so the
-                // active narrator is never a guess. Visible via `claude --debug` / the MCP logs.
-                var model = Environment.GetEnvironmentVariable(AnthropicByoProvider.ModelVariable)
-                            ?? AnthropicByoProvider.DefaultModel;
-                Console.Error.WriteLine($"[reviewcheck] narrator: LLM (Anthropic BYO, model '{model}').");
-            }
-            else
-            {
-                builder.Services.AddSingleton<IBlockNarrator, FactsNarrator>();
-                var reason = factsForced
-                    ? "forced by REVIEWCHECK_NARRATOR=facts"
-                    : $"no API key — set {AnthropicByoProvider.KeyVariable} to enable LLM explanations";
-                Console.Error.WriteLine($"[reviewcheck] narrator: facts-only ({reason}).");
-            }
-
+            builder.Services.AddSingleton(_ =>
+                new NarratorResolver(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }, factsForced));
             builder.Services.AddSingleton<IReviewProvider, PipelineProvider>();
+
+            // stderr is safe (stdout is the JSON-RPC channel): a one-line startup hint. The precise
+            // mode (and its banner) is decided per review once the host capabilities are known.
+            Console.Error.WriteLine(factsForced
+                ? "[reviewcheck] narrator: facts-only (forced by REVIEWCHECK_NARRATOR=facts)."
+                : AnthropicByoProvider.IsConfigured
+                    ? "[reviewcheck] narrator: LLM (Anthropic BYO key)."
+                    : "[reviewcheck] narrator: no key — will use host sampling if the host supports it, else facts.");
         }
 
         builder.Services.AddSingleton(_ => new SessionStore());

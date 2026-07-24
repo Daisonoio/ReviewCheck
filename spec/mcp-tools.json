@@ -147,7 +147,11 @@
               }
             }
           },
-          "first_block": { "$ref": "#/$defs/Block" }
+          "first_block": { "$ref": "#/$defs/Block" },
+          "notice": {
+            "type": "string",
+            "description": "Optional one-line banner on how the explanations were produced for this review: hosting mode (host model via sampling, grounded), or the deterministic structural narrative (no key / no hosting). The agent shows it once at the top."
+          }
         }
       }
     },

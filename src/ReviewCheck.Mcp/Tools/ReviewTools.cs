@@ -5,6 +5,9 @@ using ReviewCheck.Core;
 
 namespace ReviewCheck.Mcp.Tools;
 
+// get_review_plan receives the live McpServer so the engine can detect the host's
+// sampling capability (hosting mode) and pick the narrator for this review.
+
 /// <summary>
 /// The 7 MCP tools (spec/mcp-tools.json). Thin adapters over <see cref="ReviewEngine"/>,
 /// which carries the logic and the invariants. <c>engine</c> is injected from DI; the
@@ -15,8 +18,8 @@ public static class ReviewTools
 {
     [McpServerTool(Name = "get_review_plan")]
     [Description("Reads the local diff and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Ref: 'working' (default) | 'staged' | a git range | a commit.")]
-    public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, SourceInput source)
-        => engine.GetReviewPlanAsync(source.ToSource());
+    public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, McpServer server, SourceInput source)
+        => engine.GetReviewPlanAsync(source.ToSource(), server);
 
     [McpServerTool(Name = "next_block")]
     [Description("Advances to the next recommended block and returns it COMPLETE (code + explanation together). Print code and explanation together, never separately.")]

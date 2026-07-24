@@ -1,4 +1,5 @@
 using ReviewCheck.Core;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Mcp.Provider.Fixtures;
 
@@ -14,7 +15,7 @@ public class StubProviderTests
     [Fact]
     public async Task Provider_ReturnsFixture_ForLocalSource()
     {
-        var review = await new StubProvider().AnalyzeAsync(new Source.Local());
+        var review = await new StubProvider().AnalyzeAsync(new Source.Local(), new FactsNarrator());
 
         Assert.Same(SampleCSharp.Review, review);
         Assert.True(review.Blocks.Count >= 3);
