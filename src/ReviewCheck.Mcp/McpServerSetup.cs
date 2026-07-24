@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Pipeline;
 using ReviewCheck.Platform;
@@ -35,6 +36,23 @@ public static class McpServerSetup
                            ?? Directory.GetCurrentDirectory();
             builder.Services.AddSingleton<IDiffReader>(_ => new LocalDiffReader(repoRoot));
             builder.Services.AddSingleton<AnalysisPipeline>();
+
+            // Narrative seam (docs/25 §11): LLM narration when the user configured a key,
+            // deterministic facts otherwise. REVIEWCHECK_NARRATOR=facts forces the floor
+            // even with a key present (demos, offline, cost control).
+            var factsForced = string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_NARRATOR"), "facts",
+                StringComparison.OrdinalIgnoreCase);
+            if (!factsForced && AnthropicByoProvider.IsConfigured)
+            {
+                builder.Services.AddSingleton<ILlmProvider>(_ =>
+                    new AnthropicByoProvider(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
+                builder.Services.AddSingleton<IBlockNarrator, LlmAdapter>();
+            }
+            else
+            {
+                builder.Services.AddSingleton<IBlockNarrator, FactsNarrator>();
+            }
+
             builder.Services.AddSingleton<IReviewProvider, PipelineProvider>();
         }
 
