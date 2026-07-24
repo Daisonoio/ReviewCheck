@@ -222,6 +222,44 @@ public class AnalysisPipelineTests
         Assert.Contains("Registry", allow.UncertaintyStructural);
     }
 
+    // ---- Regression: context lines must not flag unchanged siblings ----
+
+    [Fact]
+    public void InsertingOneMethod_ProducesOneBlock_NotItsNeighbours()
+    {
+        const string source =
+            """
+            namespace App;
+
+            public class Calc
+            {
+                public int Add(int a, int b) => a + b;
+
+                public int NewOne(int a, int b) => a + b;
+
+                public int Subtract(int a, int b) => a - b;
+            }
+            """;
+
+        // git's ±context lines (Add at 5, Subtract at 9) surround the only real change (NewOne at 7-8).
+        var hunk = new DiffHunk(5, 3, 5, 5,
+        [
+            new DiffLine(' ', "    public int Add(int a, int b) => a + b;", 5, 5),
+            new DiffLine(' ', "", 6, 6),
+            new DiffLine('+', "    public int NewOne(int a, int b) => a + b;", null, 7),
+            new DiffLine('+', "", null, 8),
+            new DiffLine(' ', "    public int Subtract(int a, int b) => a - b;", 7, 9),
+        ]);
+        var diff = new LocalDiffResult("working",
+            [new FileDiff("src/Calc.cs", FileChangeKind.Modified, [hunk], NewText: source)]);
+
+        var result = new AnalysisPipeline().Run(diff);
+
+        var block = Assert.Single(result.Blocks);
+        Assert.Contains("NewOne", block.Title);
+        Assert.Contains("added", block.Title);
+    }
+
     // ---- T9/P8: graceful degradation ----
 
     [Fact]
