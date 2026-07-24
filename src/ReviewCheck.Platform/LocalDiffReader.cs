@@ -39,6 +39,14 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
     }
 
     /// <summary>
+    /// ReviewCheck's own session store lives under .reviewcheck/. Never surface our own artifacts
+    /// in a review — regardless of whether the reviewed repo happens to gitignore that folder.
+    /// </summary>
+    private static bool IsReviewCheckArtifact(string path) =>
+        path.StartsWith(".reviewcheck/", StringComparison.Ordinal) ||
+        path.StartsWith(".reviewcheck\\", StringComparison.Ordinal);
+
+    /// <summary>
     /// Untracked, non-ignored files as synthetic "added" diffs (whole file = additions), so the
     /// pipeline sees new files exactly as if git had diffed them against nothing.
     /// </summary>
@@ -50,7 +58,7 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         var listing = RunGit("ls-files --others --exclude-standard -z");
         foreach (var path in listing.Split('\0', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (seen.Contains(path))
+            if (seen.Contains(path) || IsReviewCheckArtifact(path))
                 continue;
 
             string text;
