@@ -304,9 +304,22 @@ public sealed class AnalysisPipeline
 
     private static bool IsCSharp(string path) => path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
 
-    private static bool LooksLikeTest(string path, string content) =>
-        path.Contains("Test", StringComparison.OrdinalIgnoreCase) ||
-        content.Contains("[Fact]") || content.Contains("[Test]") || content.Contains("[Theory]");
+    private static bool LooksLikeTest(string path, string content)
+    {
+        // Match by test-file NAME convention, not any "Test" in the path — a production file under a
+        // folder like "TestProject" or "TestUtilities" is not a test. The content attributes are the
+        // strong signal and cover files named otherwise.
+        var file = FileName(path);
+        var isTestFileName =
+            file.EndsWith("Tests.cs", StringComparison.OrdinalIgnoreCase) ||
+            file.EndsWith("Test.cs", StringComparison.OrdinalIgnoreCase) ||
+            file.EndsWith("Spec.cs", StringComparison.OrdinalIgnoreCase) ||
+            file.EndsWith("Specs.cs", StringComparison.OrdinalIgnoreCase);
+        var hasTestAttribute =
+            content.Contains("[Fact]") || content.Contains("[Theory]") ||
+            content.Contains("[Test]") || content.Contains("[TestMethod]");
+        return isTestFileName || hasTestAttribute;
+    }
 
     private static bool IsUnitMember(MemberDeclarationSyntax m) => m is
         MethodDeclarationSyntax or ConstructorDeclarationSyntax or PropertyDeclarationSyntax or

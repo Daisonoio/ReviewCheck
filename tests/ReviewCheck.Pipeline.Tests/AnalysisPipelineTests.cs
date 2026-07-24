@@ -260,6 +260,28 @@ public class AnalysisPipelineTests
         Assert.Contains("added", block.Title);
     }
 
+    [Fact]
+    public void ProductionFile_UnderTestNamedFolder_IsNotClassifiedAsTest()
+    {
+        const string source =
+            """
+            namespace App;
+
+            public class Widget
+            {
+                public int Value() => 42;
+            }
+            """;
+
+        // Path contains "TestProject" but this is production code (no [Fact], not *Tests.cs).
+        var hunk = new DiffHunk(5, 1, 5, 1, [new DiffLine('+', "    public int Value() => 42;", null, 5)]);
+        var diff = new LocalDiffResult("working",
+            [new FileDiff("src/TestProject/Widget.cs", FileChangeKind.Modified, [hunk], NewText: source)]);
+
+        var block = Assert.Single(new AnalysisPipeline().Run(diff).Blocks);
+        Assert.NotEqual(Intent.Test, block.Intent);
+    }
+
     // ---- T9/P8: graceful degradation ----
 
     [Fact]
