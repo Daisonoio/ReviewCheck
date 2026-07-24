@@ -68,10 +68,12 @@ English by construction; do not translate titles, explanations, or citations.)
 
 ## Operational flow
 
-1. **Start — choose the source.** *Default: local pre-PR diff* — `get_review_plan({type:"local", ref:"working"})`
-   (or `staged`/range/commit) to review what the agent/user just wrote **before the PR**. Alternatively a
-   PR: `get_review_plan({type:"pull_request", platform, repo, pr})`. Present the title, the number of
-   blocks, and the **seams**; propose the **first tiny step**: *"shall we start with the first block?"*.
+1. **Start — go straight to the local diff (default, no question asked).** When the user asks to
+   review their changes, **immediately** call `get_review_plan({type:"local", ref:"working"})` — do
+   **not** ask "local or PR?", do **not** ask which file. The default is always the local working diff;
+   just run it. (Only switch to `staged`/range/commit or a PR if the user *explicitly* asks for one.)
+   Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
+   *"shall we start with the first block?"*.
 2. **For each block** (`next_block` / the first from `get_review_plan`):
    - Open with the **title and position** ("Block 2 of 4 — *'Middleware wiring'*"), then print
      **code + explanation together**, with the **citations** and any **uncertainty**.
