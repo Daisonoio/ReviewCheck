@@ -75,6 +75,49 @@ public sealed class LocalDiffReaderTests : IDisposable
     }
 
     [Fact]
+    public void Working_IncludesUntrackedNewFiles_AsAdditions()
+    {
+        // The core case: an AI just wrote a brand-new file. `git diff` alone would miss it.
+        File.WriteAllText(Path.Combine(_repo, "Greeter.cs"),
+            "namespace App;\n\npublic class Greeter\n{\n    public string Hi() => \"hi\";\n}\n");
+
+        var result = new LocalDiffReader(_repo).Read("working");
+
+        var file = Assert.Single(result.Files);
+        Assert.Equal(("Greeter.cs", FileChangeKind.Added), (file.Path, file.Kind));
+        Assert.Contains("public class Greeter", file.NewText);
+        // Whole file is additions → the new class's line is in the hunk's added lines.
+        Assert.Contains(3, file.Hunks[0].AddedNewLines);
+    }
+
+    [Fact]
+    public void Working_MixesTrackedEditsAndUntrackedNewFiles()
+    {
+        File.WriteAllText(Path.Combine(_repo, "Program.cs"),
+            "class Program\n{\n    static void Main() { System.Console.WriteLine(\"hi\"); }\n}\n");
+        File.WriteAllText(Path.Combine(_repo, "New.cs"), "class New { }\n");
+
+        var result = new LocalDiffReader(_repo).Read("working");
+
+        Assert.Equal(2, result.Files.Count);
+        Assert.Contains(result.Files, f => f.Path == "Program.cs" && f.Kind == FileChangeKind.Modified);
+        Assert.Contains(result.Files, f => f.Path == "New.cs" && f.Kind == FileChangeKind.Added);
+    }
+
+    [Fact]
+    public void Working_IgnoresGitignoredFiles()
+    {
+        File.WriteAllText(Path.Combine(_repo, ".gitignore"), "ignored.cs\n");
+        Git("add .gitignore");
+        Git("commit -q -m gitignore");
+        File.WriteAllText(Path.Combine(_repo, "ignored.cs"), "class Ignored { }\n");
+
+        var result = new LocalDiffReader(_repo).Read("working");
+
+        Assert.DoesNotContain(result.Files, f => f.Path == "ignored.cs");
+    }
+
+    [Fact]
     public void BadRef_ThrowsGitInvocationException_NotACrash()
     {
         Assert.Throws<GitInvocationException>(() => new LocalDiffReader(_repo).Read("no-such-ref"));
