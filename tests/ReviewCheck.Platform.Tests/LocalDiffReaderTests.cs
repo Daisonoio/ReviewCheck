@@ -105,6 +105,22 @@ public sealed class LocalDiffReaderTests : IDisposable
     }
 
     [Fact]
+    public void Working_NeverSurfacesReviewChecksOwnSessionFiles()
+    {
+        // ReviewCheck writes session state under .reviewcheck/ in the reviewed repo. Even when
+        // that repo does not gitignore the folder, the review must never include those artifacts.
+        Directory.CreateDirectory(Path.Combine(_repo, ".reviewcheck"));
+        File.WriteAllText(Path.Combine(_repo, ".reviewcheck", "session-abc.json"), "{ \"blocks\": [] }\n");
+        File.WriteAllText(Path.Combine(_repo, "Real.cs"), "class Real { }\n");
+
+        var result = new LocalDiffReader(_repo).Read("working");
+
+        var file = Assert.Single(result.Files);
+        Assert.Equal("Real.cs", file.Path);
+        Assert.DoesNotContain(result.Files, f => f.Path.Contains(".reviewcheck"));
+    }
+
+    [Fact]
     public void Working_IgnoresGitignoredFiles()
     {
         File.WriteAllText(Path.Combine(_repo, ".gitignore"), "ignored.cs\n");
