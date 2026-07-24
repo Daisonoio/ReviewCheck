@@ -2,7 +2,8 @@
 
 **Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
-![status](https://img.shields.io/badge/status-design%20phase-yellow)
+![status](https://img.shields.io/badge/status-MVP%20built%20·%20local-brightgreen)
+![tests](https://img.shields.io/badge/tests-124%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -15,12 +16,13 @@
 > decision. Designed first for developers with ADHD / attention differences; useful for everyone.
 
 > [!IMPORTANT]
-> **Project status: design complete, MVP execution planned — build not yet started.**
-> This repo carries the **essential set** to build a professional MVP — the contracts, the four build
-> plans, and the agent. The machine-readable contracts are in place; the MVP itself is not built yet.
-> The **full product analysis** (problem, cognitive science, market, extended architecture, security,
-> reading guide) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo —
-> nothing was lost.
+> **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
+> the grounded LLM narration layer (MVP-3) are implemented, covered by **124 passing tests**, and
+> verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
+> accept / request-correction → outcome. C# (Roslyn) is the supported language; **Mode B** (posting a
+> review to a PR) is the next milestone, not yet built. See [Getting started](#getting-started) to run it.
+> The **full product analysis** (problem, cognitive science, market, extended architecture, security)
+> lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
@@ -161,47 +163,107 @@ flowchart TB
 
 ## Roadmap
 
-| Phase | Focus |
-|---|---|
-| **0 — Validation gate** | Minimal prototype + study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? Go/no-go before building. |
-| **1 — v1** | Local MCP add-on: Mode A (local diff), C# (Roslyn), BYO-key LLM, the full block-by-block flow; then Mode B (GitHub). |
-| **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. |
-| **3** | Recommended local models, per-repo codebase memory, personalization — all local. |
+| Phase | Focus | Status |
+|---|---|---|
+| **1 — v1 (MVP)** | Local MCP add-on: Mode A (local diff), C# (Roslyn), BYO-key LLM, the full block-by-block flow. | ✅ **Built** — Mode A, Roslyn pipeline, grounded LLM, 7 MCP tools, session persistence, recovery commands. Mode B (post to GitHub) is next. |
+| **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. | ⬜ Planned |
+| **3** | Recommended local models, per-repo codebase memory, personalization — all local. | ⬜ Planned |
+| **Ongoing** | Validation study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? | ⬜ Planned |
 
 ## Repository structure
 
 ```
+src/                  The .NET solution (net8.0):
+  ReviewCheck.Core        Immutable domain types + BlockGuard (co-presence + grounding)
+  ReviewCheck.Platform    Unified-diff parser + LocalDiffReader (git, local process)
+  ReviewCheck.Pipeline    Roslyn analysis P1–P8: graph, blocks, order, citations, seams
+  ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
+  ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
+  ReviewCheck.Mcp         The MCP server: the 7 tools + narrator wiring
+tests/                One xUnit project per src project (124 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
 GUARDRAILS.md         Guardrails and how each is enforced
 ```
 
-> This repo carries the **essential set** to build the MVP; the [`docs/README.md`](docs/README.md)
-> index maps it out. The **full analysis** (problem, cognitive science, market, extended architecture,
-> security) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo. The
-> .NET solution (`src/`, `tests/`) is built from these plans starting at MVP-1 ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
+> The **full analysis** (problem, cognitive science, market, extended architecture, security) lives in
+> the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo; the build plans that produced
+> `src/` are in [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md).
 
 ## Getting started
 
-There's no runnable code yet. Where to look, depending on what you want:
+**Prerequisites:** the [.NET 8 SDK](https://dotnet.microsoft.com/download) and `git` on your `PATH`.
 
-1. **Find your way around** — [`docs/README.md`](docs/README.md), the essential-docs index.
-2. **Understand the why** — the extended analysis (thesis, cognitive science, market, UX, security)
-   lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
-3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-mvp-execution-roadmap.md) (technical
-   gates only), then the three build plans in order:
-   [MCP stub-first](docs/23-mcp-stub-first-plan.md) → [analysis pipeline](docs/24-pipeline-plan.md) →
-   [grounded LLM](docs/25-llm-plan.md). The agent itself is specced in [`docs/21`](docs/21-development-plan.md).
-4. **The contracts are the source of truth** — [`docs/13-specification-build.md`](docs/13-specification-build.md)
-   and [`spec/`](spec/).
+### 1. Build and test
+
+```bash
+git clone https://github.com/Daisonoio/ReviewCheck.git
+cd ReviewCheck
+dotnet test        # 124 tests should pass
+```
+
+### 2. Publish the MCP server
+
+```bash
+dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o ./bin/mcp
+```
+
+This produces `bin/mcp/ReviewCheck.Mcp.exe` (Windows) / `ReviewCheck.Mcp` (Linux/macOS).
+
+### 3. Register it in your host agent
+
+For **Claude Code**, add the server to your `.mcp.json` (the key **must** be `mcpServers`):
+
+```json
+{
+  "mcpServers": {
+    "reviewcheck": {
+      "type": "stdio",
+      "command": "/absolute/path/to/ReviewCheck/bin/mcp/ReviewCheck.Mcp.exe",
+      "env": {
+        "REVIEWCHECK_REPO": "/absolute/path/to/the/repo/you/want/to/review",
+        "REVIEWCHECK_ANTHROPIC_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+Restart the host so it launches the server. On startup the server logs one line to stderr naming the
+active narrator — `narrator: LLM (...)` or `narrator: facts-only (...)` — so you always know which path
+is live.
+
+### 4. Use it
+
+Open your host agent in the target repository, make (or let the agent make) some changes, and ask:
+
+> *review my changes with ReviewCheck*
+
+It reads the local `git diff` (uncommitted changes, **including new untracked files**), splits it into
+ordered blocks, and walks you through them — accept or request a correction per block, then a final
+outcome that is the sum of your decisions.
+
+### Configuration (environment variables)
+
+| Variable | Effect |
+|---|---|
+| `REVIEWCHECK_ANTHROPIC_KEY` | Your Anthropic key (or `ANTHROPIC_API_KEY`). **Present → LLM explanations; absent → deterministic facts-only.** Never logged; code goes only to your account. |
+| `REVIEWCHECK_LLM_MODEL` | Model for narration (default `claude-sonnet-5`). |
+| `REVIEWCHECK_REPO` | Absolute path of the repository to review (defaults to the server's working directory). |
+| `REVIEWCHECK_NARRATOR` | Set to `facts` to force the deterministic floor even with a key (demos, offline, cost control). |
+| `REVIEWCHECK_PROVIDER` | Set to `stub` to use the fixture provider instead of the real pipeline (demos/tests without a repo). |
+
+> **Design docs:** the contracts are the source of truth —
+> [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
+> plans are [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md); the agent is
+> specced in [`docs/21`](docs/21-development-plan.md).
 
 ## Contributing
 
-This is an early-stage, greenfield project — a good moment to shape it. Ways to help:
+The MVP is built and runnable — a good moment to extend it. Ways to help:
 
-- **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-mvp-execution-roadmap.md)) starting
-  with the stub-first MCP server ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
+- **Mode B (post to a PR)** — the next milestone: read/post a GitHub review from the same block flow.
 - **Language support** — additional language analyzers beyond C# (Roslyn).
 - **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
   deferred until after the MVP (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §5).
