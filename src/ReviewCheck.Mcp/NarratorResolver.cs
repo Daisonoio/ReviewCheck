@@ -52,14 +52,33 @@ public sealed class NarratorResolver(HttpClient http, bool factsForced)
         return (NarrationMode.Facts, FactsNotice);
     }
 
+    /// <summary>Prefix added to the notice when a configured key was rejected, so it's honest about why.</summary>
+    public const string KeyRejectedPrefix =
+        "Your configured API key was rejected, so ReviewCheck proceeded as if no key were set. ";
+
+    // Probe result cached for the process: null = not probed, true = usable, false = rejected.
+    private bool? _keyUsable;
+
     // MCP9005: the MCP `sampling` capability is deprecated in the spec (2026-07-28, SEP-2577) but
     // still present and functional in this SDK. Hosting mode relies on it deliberately; if a future
     // SDK removes it, the decision tree degrades to facts (with its notice) automatically.
 #pragma warning disable MCP9005
-    public (IBlockNarrator Narrator, string? Notice) Resolve(McpServer? server)
+    public async Task<(IBlockNarrator Narrator, string? Notice)> ResolveAsync(McpServer? server, CancellationToken ct = default)
     {
+        // A configured-but-rejected key is treated exactly like no key (the user's rule): only an
+        // explicit 401/403 counts as rejected; a transient failure keeps the key.
+        var keyRejected = false;
+        var keyUsable = !factsForced && AnthropicByoProvider.IsConfigured;
+        if (keyUsable && !await KeyUsableAsync(ct))
+        {
+            keyUsable = false;
+            keyRejected = true;
+        }
+
         var samplingSupported = server?.ClientCapabilities?.Sampling is not null;
-        var (mode, notice) = Decide(AnthropicByoProvider.IsConfigured, factsForced, samplingSupported);
+        var (mode, notice) = Decide(keyUsable, factsForced, samplingSupported);
+        if (keyRejected)
+            notice = (KeyRejectedPrefix + (notice ?? "")).Trim();
 
         IBlockNarrator narrator = mode switch
         {
@@ -67,7 +86,17 @@ public sealed class NarratorResolver(HttpClient http, bool factsForced)
             NarrationMode.HostSampling => new LlmAdapter(new HostSamplingLlmProvider(server!.AsSamplingChatClient())),
             _ => new FactsNarrator(),
         };
-        return (narrator, notice);
+        return (narrator, string.IsNullOrWhiteSpace(notice) ? null : notice);
     }
 #pragma warning restore MCP9005
+
+    private async Task<bool> KeyUsableAsync(CancellationToken ct)
+    {
+        if (_keyUsable is { } cached)
+            return cached;
+        var status = await new AnthropicByoProvider(http).ValidateKeyAsync(ct);
+        var usable = status != AnthropicByoProvider.KeyStatus.Unauthorized; // transient/unknown keeps the key
+        _keyUsable = usable;
+        return usable;
+    }
 }

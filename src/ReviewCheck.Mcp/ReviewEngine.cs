@@ -24,7 +24,7 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store, N
     /// </summary>
     public async Task<ReviewPlanResult> GetReviewPlanAsync(Source source, McpServer? server = null)
     {
-        var (narrator, notice) = (narrators ?? NarratorResolver.FactsOnly).Resolve(server);
+        var (narrator, notice) = await (narrators ?? NarratorResolver.FactsOnly).ResolveAsync(server);
 
         var analyzed = await provider.AnalyzeAsync(source, narrator);
         if (analyzed.Blocks.Count == 0)

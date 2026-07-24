@@ -43,10 +43,10 @@ public sealed class NarratorResolverTests
     }
 
     [Fact]
-    public void Resolve_NullServer_NoKey_FallsBackToFacts()
+    public async Task Resolve_NullServer_NoKey_FallsBackToFacts()
     {
         // No live server (null) means sampling is not available → facts + notice.
-        var (narrator, notice) = new NarratorResolver(new HttpClient(), factsForced: false).Resolve(null);
+        var (narrator, notice) = await new NarratorResolver(new HttpClient(), factsForced: false).ResolveAsync(null);
         Assert.NotNull(narrator);
         // With no key configured in the test environment, this is the facts fallback.
         if (!Llm.AnthropicByoProvider.IsConfigured)

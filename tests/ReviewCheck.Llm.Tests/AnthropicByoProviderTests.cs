@@ -109,4 +109,34 @@ public sealed class AnthropicByoProviderTests
 
         await Assert.ThrowsAsync<LlmUnavailableException>(() => provider.CompleteAsync("s", "u"));
     }
+
+    // ---- ValidateKeyAsync: a rejected key must be distinguishable from a merely-unreachable one ----
+
+    [Fact]
+    public async Task ValidateKey_401_IsUnauthorized()
+    {
+        var provider = new AnthropicByoProvider(new HttpClient(new StubHandler(HttpStatusCode.Unauthorized, "{}")), Key);
+        Assert.Equal(AnthropicByoProvider.KeyStatus.Unauthorized, await provider.ValidateKeyAsync());
+    }
+
+    [Fact]
+    public async Task ValidateKey_Ok_IsValid()
+    {
+        var provider = new AnthropicByoProvider(new HttpClient(new StubHandler(HttpStatusCode.OK, OkBody("x"))), Key);
+        Assert.Equal(AnthropicByoProvider.KeyStatus.Valid, await provider.ValidateKeyAsync());
+    }
+
+    [Fact]
+    public async Task ValidateKey_ServerError_IsUnknown_KeepsTheKey()
+    {
+        var provider = new AnthropicByoProvider(new HttpClient(new StubHandler(HttpStatusCode.InternalServerError, "{}")), Key);
+        Assert.Equal(AnthropicByoProvider.KeyStatus.Unknown, await provider.ValidateKeyAsync());
+    }
+
+    [Fact]
+    public async Task ValidateKey_NoKey_IsUnauthorized()
+    {
+        var provider = new AnthropicByoProvider(new HttpClient(new StubHandler(HttpStatusCode.OK, OkBody("x"))), apiKey: "");
+        Assert.Equal(AnthropicByoProvider.KeyStatus.Unauthorized, await provider.ValidateKeyAsync());
+    }
 }

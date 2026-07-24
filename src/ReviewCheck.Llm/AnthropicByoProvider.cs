@@ -88,6 +88,53 @@ public sealed class AnthropicByoProvider : ILlmProvider
         }
     }
 
+    /// <summary>Result of probing whether the configured key actually authenticates.</summary>
+    public enum KeyStatus
+    {
+        /// <summary>The key authenticated (or the endpoint accepted it).</summary>
+        Valid,
+        /// <summary>The key was explicitly rejected (401/403) — treat it as if no key were set.</summary>
+        Unauthorized,
+        /// <summary>Transient/other failure (network, 429, 5xx) — the key is not proven bad; keep it.</summary>
+        Unknown,
+    }
+
+    /// <summary>
+    /// A cheap probe (max_tokens=1) that tells a REJECTED key from a merely-unreachable one, so a
+    /// caller can treat an invalid key exactly like a missing one. Only an explicit 401/403 is
+    /// <see cref="KeyStatus.Unauthorized"/>; anything else transient is <see cref="KeyStatus.Unknown"/>.
+    /// </summary>
+    public async Task<KeyStatus> ValidateKeyAsync(CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            return KeyStatus.Unauthorized;
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint);
+        request.Headers.Add("x-api-key", _apiKey);
+        request.Headers.Add("anthropic-version", ApiVersion);
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(new
+            {
+                model = _model,
+                max_tokens = 1,
+                messages = new[] { new { role = "user", content = "hi" } },
+            }),
+            Encoding.UTF8,
+            "application/json");
+
+        try
+        {
+            using var response = await _http.SendAsync(request, ct);
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+                return KeyStatus.Unauthorized;
+            return response.IsSuccessStatusCode ? KeyStatus.Valid : KeyStatus.Unknown;
+        }
+        catch
+        {
+            return KeyStatus.Unknown; // unreachable ≠ invalid — keep the key
+        }
+    }
+
     /// <summary>Pulls the first text part out of a Messages API response.</summary>
     private static string ExtractText(string json)
     {
