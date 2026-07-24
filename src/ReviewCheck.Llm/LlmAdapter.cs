@@ -9,26 +9,30 @@ namespace ReviewCheck.Llm;
 /// output is retried ONCE with the violation quoted back; a second failure — or an unavailable
 /// LLM — degrades to the deterministic facts narrative. A valid <see cref="Block"/> ALWAYS
 /// comes out (§1.4), and <c>Code</c> + <c>Citations</c> are stapled verbatim from the pipeline:
-/// the LLM narrates, it never anchors (§1.1). One block per call: independent explanations,
-/// minimal data surface (§6).
+/// the LLM narrates, it never anchors (§1.1). One block per call, but the prompt also carries the
+/// FULL code of that block's related blocks so interaction narrative can be concrete — a
+/// deliberate widening of the data surface beyond docs/25 §6's original "minimal" framing.
 /// </summary>
 public sealed class LlmAdapter(ILlmProvider provider) : IBlockNarrator
 {
     public async Task<IReadOnlyList<Block>> ExplainAsync(
         IReadOnlyList<StructuralBlock> blocks, CancellationToken ct = default)
     {
+        var byId = blocks.ToDictionary(b => b.Id);
         var result = new List<Block>(blocks.Count);
         foreach (var block in blocks)
-            result.Add(await ExplainOneAsync(block, ct));
+            result.Add(await ExplainOneAsync(block, byId, ct));
         return result;
     }
 
     public Task<IReadOnlyList<Block>> NarrateAsync(IReadOnlyList<StructuralBlock> blocks, CancellationToken ct = default) =>
         ExplainAsync(blocks, ct);
 
-    private async Task<Block> ExplainOneAsync(StructuralBlock block, CancellationToken ct)
+    private async Task<Block> ExplainOneAsync(
+        StructuralBlock block, IReadOnlyDictionary<string, StructuralBlock> byId, CancellationToken ct)
     {
-        var user = PromptBuilder.User(block);
+        var related = PromptBuilder.RelatedBlocks(block, byId);
+        var user = PromptBuilder.User(block, byId);
         string? violation = null;
 
         for (var attempt = 0; attempt < 2; attempt++)
@@ -50,7 +54,7 @@ public sealed class LlmAdapter(ILlmProvider provider) : IBlockNarrator
                 continue;
             }
 
-            violation = ExplanationRubric.Violation(block, parsed);
+            violation = ExplanationRubric.Violation(block, parsed, related);
             if (violation is null)
                 return Assemble(block, parsed);
         }

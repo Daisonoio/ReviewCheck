@@ -248,6 +248,15 @@ public sealed class AnalysisPipeline
 
                 if (seen.Add((user.OrderKey, used.OrderKey)))
                     edges.Add((user, used, user.Intent == Intent.Test ? RelationKind.Tests : RelationKind.Uses));
+
+                // Concrete symbol fact (docs/25 §step5): name the exact member used, so the
+                // narrative can be precise even about a related block already listed by title.
+                var callLabel = target.ContainingType is { } owningType
+                    ? (target.Name == ".ctor" ? owningType.Name : $"{owningType.Name}.{target.Name}")
+                    : target.Name;
+                var callFact = $"calls '{callLabel}'";
+                if (!user.Facts.Contains(callFact))
+                    user.Facts.Add(callFact);
             }
 
             if (unresolved.Count > 0)
