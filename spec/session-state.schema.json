@@ -11,7 +11,7 @@
     },
     "source": {
       "type": "object",
-      "description": "What is under review. Mode A (primary) = LOCAL pre-PR diff; Mode B = a PR.",
+      "description": "What is under review: the LOCAL diff (git working/staged/range/commit).",
       "required": [ "type" ],
       "properties": {
         "type": {

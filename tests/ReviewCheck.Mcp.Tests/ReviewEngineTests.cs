@@ -156,10 +156,10 @@ public sealed class ReviewEngineTests : IDisposable
     }
 
     [Fact]
-    public async Task Submit_ModeB_IsOutOfScope_AndPostsNothing()
+    public async Task Submit_PullRequestSource_IsOutOfScope_AndPostsNothing()
     {
         var engine = NewEngine();
-        // Open a PR-source session directly through the store so submit sees Mode B.
+        // Open a PR-source session directly through the store so submit sees the reserved PR seam.
         var store = new SessionStore(_root);
         var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local());
         var session = store.Create(analyzed, new Source.PullRequest("github", "org/repo", "42"));

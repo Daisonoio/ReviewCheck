@@ -91,17 +91,17 @@ public sealed record InteractionPoint(string Text, IReadOnlyList<string> BlockId
 /// <summary>Relationship between two blocks, from the deterministic dependency graph.</summary>
 public sealed record BlockRelation(string From, string To, RelationKind Kind);
 
-/// <summary>A requested correction note (a to-do item in Mode A; a comment in Mode B).</summary>
+/// <summary>A requested correction note (a local to-do item to apply).</summary>
 public sealed record CorrectionNote(string BlockId, string Note);
 
-/// <summary>What is under review. Mode A = local diff (primary); Mode B = a platform PR.</summary>
+/// <summary>What is under review. The local diff is the MVP source; the PR variant is a reserved seam, not exposed.</summary>
 public abstract record Source
 {
     private Source() { }
 
-    /// <summary>Mode A: the local git diff. Ref: 'working' (default) | 'staged' | a git range | a commit.</summary>
+    /// <summary>The local git diff. Ref: 'working' (default) | 'staged' | a git range | a commit.</summary>
     public sealed record Local(string? Ref = "working") : Source;
 
-    /// <summary>Mode B: a PR on a platform, read/posted with the user's local token.</summary>
+    /// <summary>A PR on a platform — a reserved seam, not part of the MVP surface.</summary>
     public sealed record PullRequest(string Platform, string Repo, string Pr) : Source;
 }

@@ -85,7 +85,7 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store)
     /// <summary>
     /// Closes the review. The outcome is the sum of the human decisions; nothing is ever a verdict.
     /// Deterministic gate G6: with any undecided block it does not close (returns undecided_blocks).
-    /// Mode A posts nothing; Mode B (posting to a PR) is out of scope for MVP-1 — no network.
+    /// Local review: nothing is ever posted — no token, no network.
     /// </summary>
     public SubmitResult SubmitReview(string session, bool confirm)
     {
@@ -111,21 +111,21 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store)
                 Notes: noteList,
                 UndecidedBlocks: undecided);
 
-        // Mode B is out of the MVP: no token, no network, nothing posted.
+        // Reviewing a pull request is not part of the MVP: no token, no network, nothing posted.
         if (state.Source.Type == "pull_request")
             return new SubmitResult(
                 Outcome: "comment_only",
                 Posted: false,
-                Summary: "Mode B (posting to a pull request) is not included in MVP-1. Nothing was posted.",
+                Summary: "Reviewing a pull request is not included in this MVP. Nothing was posted.",
                 Notes: noteList,
                 UndecidedBlocks: null);
 
-        // Mode A (local, primary): present the outcome; post nothing (the self-approval problem does not exist).
+        // Local review: present the outcome; post nothing (the self-approval problem does not exist).
         return notes.Count > 0
             ? new SubmitResult("corrections_to_apply", false,
-                $"{notes.Count} correction(s) to apply before opening the PR; the rest is accepted.", noteList, null)
+                $"{notes.Count} correction(s) to apply; the rest is accepted.", noteList, null)
             : new SubmitResult("ready_to_proceed", false,
-                "All blocks accepted — ready to proceed (open the PR).", null, null);
+                "All blocks accepted — ready to proceed.", null, null);
     }
 
     private static double ProgressPct(SessionState state)

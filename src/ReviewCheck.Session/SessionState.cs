@@ -23,7 +23,7 @@ public sealed record SessionState(
     public IReadOnlyList<InteractionPoint>? InteractionPoints { get; init; }
 }
 
-/// <summary>What is under review. Mode A = local diff (primary); Mode B = a platform PR.</summary>
+/// <summary>What is under review. The local diff is the MVP source; the PR variant is a reserved seam.</summary>
 public sealed record SourceState(
     string Type,
     string? Ref = null,

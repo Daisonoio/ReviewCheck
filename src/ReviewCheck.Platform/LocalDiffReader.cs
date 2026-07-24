@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace ReviewCheck.Platform;
 
 /// <summary>
-/// Mode A's diff source: local git, invoked as a process. No token, no network (G-NOPHONE).
+/// The diff source: local git, invoked as a process. No token, no network (G-NOPHONE).
 /// Ref semantics (spec/mcp-tools.json → get_review_plan.source.ref):
 /// 'working' (default) = uncommitted changes; 'staged' = the index; a range ('A...B') or a
 /// single commit are passed to git as-is. After parsing, each file's full post-change

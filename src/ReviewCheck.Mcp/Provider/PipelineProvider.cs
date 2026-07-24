@@ -19,7 +19,7 @@ public sealed class PipelineProvider(IDiffReader diffReader, AnalysisPipeline pi
     {
         if (source is not Source.Local local)
             throw new InvalidOperationException(
-                "Mode B (pull request) is not included in the MVP: review the local diff instead.");
+                "Reviewing a pull request is not included in the MVP: review the local diff instead.");
 
         var diff = diffReader.Read(local.Ref);
         var structural = pipeline.Run(diff);

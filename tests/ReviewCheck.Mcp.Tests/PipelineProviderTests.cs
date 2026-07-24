@@ -11,7 +11,7 @@ namespace ReviewCheck.Mcp.Tests;
 /// <summary>
 /// Docs/24 §7 — the plug-in check: with the REAL provider (diff → pipeline → narrator),
 /// the MVP-1 guarantees hold unchanged: every block passes BlockGuard, the engine flow
-/// works end-to-end, Mode B stays out of scope. The MVP-1 tests become regression tests.
+/// works end-to-end, the PR source stays out of scope. The MVP-1 tests become regression tests.
 /// </summary>
 public sealed class PipelineProviderTests : IDisposable
 {
@@ -100,7 +100,7 @@ public sealed class PipelineProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task ModeB_IsRejected_NoNetworkPath()
+    public async Task PullRequestSource_IsRejected_NoNetworkPath()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             NewProvider().AnalyzeAsync(new Source.PullRequest("github", "org/repo", "1")));

@@ -19,8 +19,8 @@
 > **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
 > the grounded LLM narration layer (MVP-3) are implemented, covered by **124 passing tests**, and
 > verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
-> accept / request-correction → outcome. C# (Roslyn) is the supported language; **Mode B** (posting a
-> review to a PR) is the next milestone, not yet built. See [Getting started](#getting-started) to run it.
+> accept / request-correction → outcome. C# (Roslyn) is the supported language. See
+> [Getting started](#getting-started) to run it.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
@@ -73,28 +73,23 @@ local model) and **your** repository access. Your code never leaves your infrast
 
 ## How it works
 
-Two sources, one engine:
-
-- **Mode A — local diff, pre-PR (primary).** Review what an agent just wrote — the uncommitted /
-  staged / local changes — **before** you open a pull request. Reads via `git`; **no token, no
-  network**. The outcome is your understanding plus a **list of corrections to apply**.
-- **Mode B — pull request (secondary).** Review a PR (yours or a teammate's); the outcome can be
-  **posted** to GitHub / Azure DevOps (approve / request-changes, with a `comment_only` fallback when
-  the platform forbids self-approval).
+Review your **local diff** — the uncommitted / staged / local changes an agent (or you) just wrote,
+**before** you open a pull request. Reads via `git`; **no token, no network**. The outcome is your
+understanding plus a **list of corrections to apply** — nothing is ever posted.
 
 ```mermaid
 flowchart LR
-    A["Changes<br/>(local diff · or a PR)"] --> P["ReviewCheck<br/>(local MCP server)"]
+    A["Local diff<br/>(git working · staged · range · commit)"] --> P["ReviewCheck<br/>(local MCP server)"]
     P --> B["Blocks + reading order + seams<br/>code &amp; explanation, grounded"]
     B --> H{"You, block by block"}
     H -->|accept| H
     H -->|request correction| H
-    H --> O["Outcome = sum of your decisions<br/>(corrections list · or posted review)"]
+    H --> O["Outcome = sum of your decisions<br/>(corrections to apply · nothing posted)"]
     P -. "your LLM (BYO key / local)" .-> L["LLM"]
 ```
 
 <details>
-<summary>Example (inside Claude Code, Mode A)</summary>
+<summary>Example (inside Claude Code)</summary>
 
 ```
 You:  review the changes I just wrote, before I open the PR
@@ -147,7 +142,7 @@ flowchart TB
         LA["LLM adapter<br/>(your key / local model)"]
         SS["Session store<br/>local JSON file"]
     end
-    RC -->|"read / (Mode B) post"| GH["GitHub / Azure DevOps"]
+    RC -->|"read local git"| GH["git working tree"]
     RC -->|"targeted context"| LLM["Your LLM"]
 ```
 
@@ -163,7 +158,7 @@ flowchart TB
 
 | Phase | Focus | Status |
 |---|---|---|
-| **1 — v1 (MVP)** | Local MCP add-on: Mode A (local diff), C# (Roslyn), BYO-key LLM, the full block-by-block flow. | ✅ **Built** — Mode A, Roslyn pipeline, grounded LLM, 7 MCP tools, session persistence, recovery commands. Mode B (post to GitHub) is next. |
+| **1 — v1 (MVP)** | Local MCP add-on: local-diff review, C# (Roslyn), BYO-key LLM, the full block-by-block flow. | ✅ **Built** — local-diff pipeline (Roslyn), grounded LLM, 7 MCP tools, session persistence, recovery commands. |
 | **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. | ⬜ Planned |
 | **3** | Recommended local models, per-repo codebase memory, personalization — all local. | ⬜ Planned |
 | **Ongoing** | Validation study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? | ⬜ Planned |
@@ -260,7 +255,7 @@ outcome that is the sum of your decisions.
 
 The MVP is built and runnable — a good moment to extend it. Ways to help:
 
-- **Mode B (post to a PR)** — the next milestone: read/post a GitHub review from the same block flow.
+- **Posting to a PR** — a future milestone: read/post a GitHub review from the same block flow.
 - **Language support** — additional language analyzers beyond C# (Roslyn).
 - **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
   deferred until after the MVP (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §5).

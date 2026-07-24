@@ -14,7 +14,7 @@ namespace ReviewCheck.Mcp.Tools;
 public static class ReviewTools
 {
     [McpServerTool(Name = "get_review_plan")]
-    [Description("Reads a set of changes and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Mode A (primary) = local pre-PR diff; Mode B = a PR.")]
+    [Description("Reads the local diff and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Ref: 'working' (default) | 'staged' | a git range | a commit.")]
     public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, SourceInput source)
         => engine.GetReviewPlanAsync(source.ToSource());
 
@@ -44,7 +44,7 @@ public static class ReviewTools
         => engine.ReviewStatus(session);
 
     [McpServerTool(Name = "submit_review")]
-    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Mode A (local): posts nothing, returns a summary + corrections to apply. Mode B (PR): out of scope in MVP-1.")]
+    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Posts nothing: returns a summary + the corrections to apply locally.")]
     public static SubmitResult SubmitReview(ReviewEngine engine, string session, bool confirm = false)
         => engine.SubmitReview(session, confirm);
 }

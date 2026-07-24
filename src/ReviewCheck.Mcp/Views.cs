@@ -64,7 +64,7 @@ public sealed record PositionView(
     [property: JsonPropertyName("index")] int Index,
     [property: JsonPropertyName("total")] int Total);
 
-/// <summary>A correction note (Mode A: a to-do; Mode B: a comment).</summary>
+/// <summary>A correction note — a local to-do to apply.</summary>
 public sealed record NoteView(
     [property: JsonPropertyName("block_id")] string BlockId,
     [property: JsonPropertyName("note")] string Note);

@@ -60,18 +60,17 @@ English by construction; do not translate titles, explanations, or citations.)
      behind the scenes. When listing edges, use the related blocks' **titles** ("uses *'TokenBucket
      class'*"), adding the id only if the user asks for it.
 5. **Decision to the human**: for each block ask *accept* or *request correction*. Don't advance on your own.
-6. **Outcome = sum of decisions**: at the end of the review call `submit_review`. In **Mode A** (local)
-   present the **list of corrections to apply** (nothing to post); in **Mode B** (PR) ask for **explicit
-   confirmation** before posting. ≥1 correction → *request changes*; all accepted → *approve* (B) /
-   *ready to proceed* (A).
+6. **Outcome = sum of decisions**: at the end of the review call `submit_review` and present the
+   **list of corrections to apply** — nothing is ever posted. ≥1 correction → *corrections to apply*;
+   all accepted → *ready to proceed*.
 7. **Local**: no data leaves the user's machine toward ReviewCheck services.
 
 ## Operational flow
 
 1. **Start — go straight to the local diff (default, no question asked).** When the user asks to
    review their changes, **immediately** call `get_review_plan({type:"local", ref:"working"})` — do
-   **not** ask "local or PR?", do **not** ask which file. The default is always the local working diff;
-   just run it. (Only switch to `staged`/range/commit or a PR if the user *explicitly* asks for one.)
+   **not** ask which file. The default is always the local working diff; just run it. (Only switch to
+   `staged`, a git range, or a commit if the user *explicitly* asks for one.)
    Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
    *"shall we start with the first block?"*.
 2. **For each block** (`next_block` / the first from `get_review_plan`):
@@ -82,11 +81,9 @@ English by construction; do not translate titles, explanations, or citations.)
    - Ask: **accept** (`accept_block`) or **request a correction** with a note (`request_correction`)?
 3. **Interruption/resume.** State is on a local file: if the user stops, on resume pick up from
    `review_status` ("you were at block N, here's what you had decided").
-4. **Closure.** With all blocks decided, `submit_review`:
-   - **Mode A (local):** present the summary and the **corrections to apply** (`ready_to_proceed` if
-     there are none); the user fixes them (or has the agent fix them) and then opens the PR. Post nothing.
-   - **Mode B (PR):** `submit_review(confirm=false)` for the **preview**; show the outcome and notes;
-     **ask for confirmation**; then `submit_review(confirm=true)` to post.
+4. **Closure.** With all blocks decided, call `submit_review`: present the summary and the
+   **corrections to apply** (`ready_to_proceed` if there are none); the user fixes them (or has the
+   agent fix them). Nothing is ever posted.
 
 ## What NOT to do (rejections)
 
