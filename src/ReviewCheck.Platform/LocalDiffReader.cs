@@ -63,6 +63,9 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         }
     }
 
+    /// <summary>Hard ceiling so a stuck git (pager, prompt, huge tree, wrong dir) can never hang the tool.</summary>
+    private static readonly TimeSpan GitTimeout = TimeSpan.FromSeconds(30);
+
     private string RunGit(string arguments)
     {
         var psi = new ProcessStartInfo("git", arguments)
@@ -70,18 +73,36 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = true, // git must never block waiting on stdin (pager/prompt)
             UseShellExecute = false,
         };
+        // Neutralize interactive git: no pager, no credential/terminal prompts.
+        psi.Environment["GIT_PAGER"] = "cat";
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
 
         using var process = Process.Start(psi)
             ?? throw new GitInvocationException("git could not be started. Is git installed?");
-        var stdout = process.StandardOutput.ReadToEnd();
-        var stderr = process.StandardError.ReadToEnd();
-        process.WaitForExit();
+        process.StandardInput.Close();
+
+        // Read both streams concurrently: reading one to end while the other fills its pipe
+        // buffer is the classic Process deadlock. Async reads drain both at once.
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+
+        if (!process.WaitForExit((int)GitTimeout.TotalMilliseconds))
+        {
+            try { process.Kill(entireProcessTree: true); } catch { /* best effort */ }
+            throw new GitInvocationException(
+                $"git {arguments} timed out after {GitTimeout.TotalSeconds:0}s in '{repoRoot}'. " +
+                "Is this a git repository? (Set REVIEWCHECK_REPO to the target repo path.)");
+        }
+
+        var stdout = stdoutTask.GetAwaiter().GetResult();
+        var stderr = stderrTask.GetAwaiter().GetResult();
 
         if (process.ExitCode != 0)
             throw new GitInvocationException(
-                $"git {arguments} failed (exit {process.ExitCode}): {stderr.Trim()}");
+                $"git {arguments} failed (exit {process.ExitCode}) in '{repoRoot}': {stderr.Trim()}");
 
         return stdout;
     }
