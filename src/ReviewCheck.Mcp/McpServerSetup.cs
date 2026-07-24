@@ -1,7 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp.Provider;
+using ReviewCheck.Pipeline;
+using ReviewCheck.Platform;
 using ReviewCheck.Session;
 
 namespace ReviewCheck.Mcp;
@@ -18,8 +21,50 @@ public static class McpServerSetup
         // stdout is reserved for the MCP JSON-RPC channel: console logs go to stderr.
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
 
-        // The seam (docs/23 §0): swap StubProvider for the real pipeline in MVP-2/3 — nothing else changes.
-        builder.Services.AddSingleton<IReviewProvider, StubProvider>();
+        // The seam (docs/23 §0): the real pipeline is the default since MVP-2.
+        // REVIEWCHECK_PROVIDER=stub keeps the fixture provider (demos, tests without a repo).
+        if (string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_PROVIDER"), "stub",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            builder.Services.AddSingleton<IReviewProvider, StubProvider>();
+        }
+        else
+        {
+            // Repo root = where the host launched the server (the project dir via .mcp.json);
+            // REVIEWCHECK_REPO overrides it explicitly.
+            var repoRoot = Environment.GetEnvironmentVariable("REVIEWCHECK_REPO")
+                           ?? Directory.GetCurrentDirectory();
+            builder.Services.AddSingleton<IDiffReader>(_ => new LocalDiffReader(repoRoot));
+            builder.Services.AddSingleton<AnalysisPipeline>();
+
+            // Narrative seam (docs/25 §11): LLM narration when the user configured a key,
+            // deterministic facts otherwise. REVIEWCHECK_NARRATOR=facts forces the floor
+            // even with a key present (demos, offline, cost control).
+            var factsForced = string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_NARRATOR"), "facts",
+                StringComparison.OrdinalIgnoreCase);
+            if (!factsForced && AnthropicByoProvider.IsConfigured)
+            {
+                builder.Services.AddSingleton<ILlmProvider>(_ =>
+                    new AnthropicByoProvider(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
+                builder.Services.AddSingleton<IBlockNarrator, LlmAdapter>();
+                // stderr is safe (stdout is the JSON-RPC channel): a one-line startup banner so the
+                // active narrator is never a guess. Visible via `claude --debug` / the MCP logs.
+                var model = Environment.GetEnvironmentVariable(AnthropicByoProvider.ModelVariable)
+                            ?? AnthropicByoProvider.DefaultModel;
+                Console.Error.WriteLine($"[reviewcheck] narrator: LLM (Anthropic BYO, model '{model}').");
+            }
+            else
+            {
+                builder.Services.AddSingleton<IBlockNarrator, FactsNarrator>();
+                var reason = factsForced
+                    ? "forced by REVIEWCHECK_NARRATOR=facts"
+                    : $"no API key — set {AnthropicByoProvider.KeyVariable} to enable LLM explanations";
+                Console.Error.WriteLine($"[reviewcheck] narrator: facts-only ({reason}).");
+            }
+
+            builder.Services.AddSingleton<IReviewProvider, PipelineProvider>();
+        }
+
         builder.Services.AddSingleton(_ => new SessionStore());
         builder.Services.AddSingleton<ReviewEngine>();
 
