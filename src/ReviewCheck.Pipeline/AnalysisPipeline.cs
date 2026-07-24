@@ -95,11 +95,10 @@ public sealed class AnalysisPipeline
 
         foreach (var hunk in file.Hunks.Where(h => h.NewRange is not null))
         {
-            var (hunkStart, hunkEnd) = hunk.NewRange!.Value;
             var members = root.DescendantNodes()
                 .OfType<MemberDeclarationSyntax>()
                 .Where(IsUnitMember)
-                .Where(m => Intersects(LineSpan(text, m), (hunkStart, hunkEnd)))
+                .Where(m => HunkTouchesMember(hunk, LineSpan(text, m)))
                 .ToList();
 
             if (members.Count == 0)
@@ -324,6 +323,20 @@ public sealed class AnalysisPipeline
 
     private static bool Intersects((int Start, int End) a, (int Start, int End) b) =>
         a.Start <= b.End && b.Start <= a.End;
+
+    /// <summary>
+    /// A hunk touches a member only if a line it actually CHANGED falls inside the member. The ±3
+    /// context lines git prints around a change must not pull neighbouring members in (otherwise
+    /// inserting one method flags its unchanged siblings as "modified"). Pure-deletion hunks (no
+    /// added lines) fall back to range intersection so the removal still attributes to its member.
+    /// </summary>
+    private static bool HunkTouchesMember(DiffHunk hunk, (int Start, int End) memberSpan)
+    {
+        var changed = hunk.AddedNewLines.ToList();
+        if (changed.Count > 0)
+            return changed.Any(l => memberSpan.Start <= l && l <= memberSpan.End);
+        return hunk.NewRange is { } r && Intersects(memberSpan, r);
+    }
 
     private static (int Start, int End)? Clamp((int Start, int End) r, (int Start, int End) bounds)
     {
