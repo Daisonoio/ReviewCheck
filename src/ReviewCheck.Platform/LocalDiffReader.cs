@@ -28,7 +28,57 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             .Select(f => f with { NewText = LoadNewText(f, effective) })
             .ToList();
 
+        // `git diff` for the working tree lists only tracked modifications — brand-new files are
+        // invisible to it. But reviewing AI-written code is mostly reviewing NEW files, so for the
+        // 'working' ref we add the untracked (non-ignored) files as additions. (staged/range/commit
+        // already include their new files via the diff itself.)
+        if (effective == "working")
+            files.AddRange(UntrackedAsAdded(files.Select(f => f.Path)));
+
         return new LocalDiffResult(effective, files);
+    }
+
+    /// <summary>
+    /// Untracked, non-ignored files as synthetic "added" diffs (whole file = additions), so the
+    /// pipeline sees new files exactly as if git had diffed them against nothing.
+    /// </summary>
+    private IEnumerable<FileDiff> UntrackedAsAdded(IEnumerable<string> alreadySeen)
+    {
+        var seen = alreadySeen.ToHashSet(StringComparer.Ordinal);
+
+        // -z: NUL-separated, so paths with spaces/newlines stay intact. --exclude-standard honors .gitignore.
+        var listing = RunGit("ls-files --others --exclude-standard -z");
+        foreach (var path in listing.Split('\0', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (seen.Contains(path))
+                continue;
+
+            string text;
+            try
+            {
+                text = File.ReadAllText(Path.Combine(repoRoot, path));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue; // unreadable (locked, gone, permissions) → skip, never crash
+            }
+
+            var lines = text.Split('\n');
+            // Trailing newline yields an empty final element that isn't a real line.
+            var lineCount = lines.Length > 0 && lines[^1].Length == 0 ? lines.Length - 1 : lines.Length;
+            if (lineCount == 0)
+                continue; // empty new file: nothing to review
+
+            var diffLines = new List<DiffLine>(lineCount);
+            for (var i = 0; i < lineCount; i++)
+                diffLines.Add(new DiffLine('+', lines[i].TrimEnd('\r'), null, i + 1));
+
+            yield return new FileDiff(
+                path,
+                FileChangeKind.Added,
+                [new DiffHunk(0, 0, 1, lineCount, diffLines)],
+                NewText: text);
+        }
     }
 
     private string? LoadNewText(FileDiff file, string @ref)
