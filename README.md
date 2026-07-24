@@ -21,8 +21,6 @@
 > verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
 > accept / request-correction → outcome. C# (Roslyn) is the supported language; **Mode B** (posting a
 > review to a PR) is the next milestone, not yet built. See [Getting started](#getting-started) to run it.
-> The **full product analysis** (problem, cognitive science, market, extended architecture, security)
-> lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
@@ -187,9 +185,8 @@ agent/                The product agent definition (reviewcheck.agent.md)
 GUARDRAILS.md         Guardrails and how each is enforced
 ```
 
-> The **full analysis** (problem, cognitive science, market, extended architecture, security) lives in
-> the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo; the build plans that produced
-> `src/` are in [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md).
+> The build plans that produced `src/` are in
+> [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md).
 
 ## Getting started
 
@@ -279,8 +276,7 @@ constraints (e.g. adding a backend, or an "auto-approve" capability) can't be ac
 ReviewCheck handles source code — the most sensitive asset a software team has — so security is a
 first-class concern, not an afterthought. The local, no-backend model dissolves whole classes of SaaS
 risk; the residual focus is **local token handling**, **supply-chain integrity** of the OSS package,
-**no phone-home**, and **indirect prompt injection** via untrusted repo content. The full security
-assessment lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
+**no phone-home**, and **indirect prompt injection** via untrusted repo content.
 
 ## License
 
