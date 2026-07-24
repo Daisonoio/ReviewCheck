@@ -1,4 +1,5 @@
 using ReviewCheck.Core;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Pipeline;
@@ -43,7 +44,8 @@ public sealed class PipelineProviderTests : IDisposable
             texts.Select((t, i) => new DiffLine('+', t, null, i + 1)).ToList();
     }
 
-    private PipelineProvider NewProvider() => new(new FakeDiffReader(), new AnalysisPipeline());
+    // FactsNarrator keeps these tests deterministic; LlmAdapter is exercised in ReviewCheck.Llm.Tests.
+    private PipelineProvider NewProvider() => new(new FakeDiffReader(), new AnalysisPipeline(), new FactsNarrator());
 
     [Fact]
     public async Task RealBlocks_AllPassBlockGuard_CoPresentAndGrounded()

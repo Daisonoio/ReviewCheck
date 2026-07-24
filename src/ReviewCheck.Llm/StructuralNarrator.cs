@@ -1,13 +1,14 @@
 using ReviewCheck.Core;
 using ReviewCheck.Pipeline;
 
-namespace ReviewCheck.Mcp.Provider;
+namespace ReviewCheck.Llm;
 
 /// <summary>
-/// MVP-2 narrator: maps a <see cref="StructuralBlock"/> to a complete <see cref="Block"/> with a
-/// DETERMINISTIC narrative built only from the structural facts — describe and ask, never a verdict.
-/// Honesty by design: every block declares that this narrative is generated without an LLM
-/// (the semantic depth is plan docs/25, MVP-3, which replaces exactly this class).
+/// Facts-only narrator: maps a <see cref="StructuralBlock"/> to a complete <see cref="Block"/>
+/// with a DETERMINISTIC narrative built only from the structural facts — describe and ask,
+/// never a verdict. Born as the MVP-2 narrator; in MVP-3 it is the guaranteed floor (docs/25
+/// §1.4): the no-key configuration and the degradation path when the LLM is down or its output
+/// is rejected twice. Honesty by design: every block declares how its narrative was produced.
 /// The citations pass through untouched (grounding was computed upstream — GUARDRAILS G2).
 /// </summary>
 public static class StructuralNarrator
@@ -37,7 +38,7 @@ public static class StructuralNarrator
 
         var uncertainty = AppendSentence(
             structural.UncertaintyStructural,
-            "Narrative generated deterministically from code structure (MVP-2, no LLM): it tells you where to look, not what the code means.");
+            "Narrative generated deterministically from code structure (no LLM): it tells you where to look, not what the code means.");
 
         return new Block(
             Id: structural.Id,
@@ -52,6 +53,6 @@ public static class StructuralNarrator
     private static string Capitalize(string s) =>
         s.Length > 0 ? char.ToUpperInvariant(s[0]) + s[1..] : s;
 
-    private static string AppendSentence(string? existing, string sentence) =>
+    internal static string AppendSentence(string? existing, string sentence) =>
         existing is null ? sentence : $"{existing} {sentence}";
 }
