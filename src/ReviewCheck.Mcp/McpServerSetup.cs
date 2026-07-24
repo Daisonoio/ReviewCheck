@@ -47,10 +47,19 @@ public static class McpServerSetup
                 builder.Services.AddSingleton<ILlmProvider>(_ =>
                     new AnthropicByoProvider(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
                 builder.Services.AddSingleton<IBlockNarrator, LlmAdapter>();
+                // stderr is safe (stdout is the JSON-RPC channel): a one-line startup banner so the
+                // active narrator is never a guess. Visible via `claude --debug` / the MCP logs.
+                var model = Environment.GetEnvironmentVariable(AnthropicByoProvider.ModelVariable)
+                            ?? AnthropicByoProvider.DefaultModel;
+                Console.Error.WriteLine($"[reviewcheck] narrator: LLM (Anthropic BYO, model '{model}').");
             }
             else
             {
                 builder.Services.AddSingleton<IBlockNarrator, FactsNarrator>();
+                var reason = factsForced
+                    ? "forced by REVIEWCHECK_NARRATOR=facts"
+                    : $"no API key — set {AnthropicByoProvider.KeyVariable} to enable LLM explanations";
+                Console.Error.WriteLine($"[reviewcheck] narrator: facts-only ({reason}).");
             }
 
             builder.Services.AddSingleton<IReviewProvider, PipelineProvider>();
