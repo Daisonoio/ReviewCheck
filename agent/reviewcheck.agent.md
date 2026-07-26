@@ -143,7 +143,7 @@ All these commands **trigger the same tool**: `get_block(session, block_id)`, wh
 
 ## Packaging per environment (same substance, different formats)
 
-- **Claude Code** — subagent/skill: this file in `.claude/agents/` (or as a Skill) + the `reviewcheck` MCP server registered.
+- **Claude Code** — this file in `.claude/agents/`, or as a **Skill** (`.claude/skills/reviewcheck-guided-review/SKILL.md`), + the `reviewcheck` MCP server registered.
 - **GitHub Copilot** — equivalent custom agent / instructions + the MCP server.
 - **Cursor** — equivalent rule/agent + the MCP server.
 

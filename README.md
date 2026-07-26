@@ -175,8 +175,9 @@ src/                  The .NET solution (net8.0):
 tests/                One xUnit project per src project (134 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
-agent/                The product agent definition (reviewcheck.agent.md)
+agent/ , .claude/     The product agent definition + the Claude Code skill packaging (golden path)
 eval/                 Capability eval suite: scores the guardrails over a corpus, gates CI (eval/README.md)
+AGENTS.md , CLAUDE.md Agent-facing context for developing this repo (build/test/eval, guarantees, conventions)
 GUARDRAILS.md         Guardrails and how each is enforced
 ```
 
