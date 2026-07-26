@@ -4,38 +4,41 @@ namespace ReviewCheck.Mcp.Tests;
 
 /// <summary>
 /// The narrator decision tree (docs/25 §hosting-mode). Tested as a pure function so it needs no
-/// live MCP server: a configured key wins; else host sampling when supported (hosting notice);
-/// else the deterministic facts narrative (deliberate-choice notice). Forced facts = no notice.
+/// live MCP server. Two visible behaviours: a grounded narrator (own key or host sampling) always
+/// carries the 🟡 disclaimer; no/invalid key hands interpretation to the host with the 🔴 disclaimer.
+/// Forced facts is the deterministic override — no LLM, no disclaimer.
 /// </summary>
 public sealed class NarratorResolverTests
 {
     [Fact]
-    public void Key_Wins_NoNotice()
+    public void Key_Wins_WithYellowDisclaimer()
     {
         var (mode, notice) = NarratorResolver.Decide(keyConfigured: true, factsForced: false, samplingSupported: true);
         Assert.Equal(NarrationMode.KeyLlm, mode);
-        Assert.Null(notice);
+        Assert.Equal(NarratorResolver.GroundedDisclaimer, notice);
+        Assert.Contains("🟡", notice!);
     }
 
     [Fact]
-    public void NoKey_SamplingSupported_IsHostingMode_WithNotice()
+    public void NoKey_SamplingSupported_IsHostSampling_WithYellowDisclaimer()
     {
         var (mode, notice) = NarratorResolver.Decide(keyConfigured: false, factsForced: false, samplingSupported: true);
         Assert.Equal(NarrationMode.HostSampling, mode);
-        Assert.Equal(NarratorResolver.HostingNotice, notice);
+        Assert.Equal(NarratorResolver.GroundedDisclaimer, notice);
+        Assert.Contains("🟡", notice!);
     }
 
     [Fact]
-    public void NoKey_NoSampling_IsFacts_WithDeliberateChoiceNotice()
+    public void NoKey_NoSampling_HostInterprets_WithRedDisclaimer()
     {
         var (mode, notice) = NarratorResolver.Decide(keyConfigured: false, factsForced: false, samplingSupported: false);
         Assert.Equal(NarrationMode.Facts, mode);
-        Assert.Equal(NarratorResolver.FactsNotice, notice);
-        Assert.Contains("deliberate", notice!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(NarratorResolver.HostInterpretDisclaimer, notice);
+        Assert.Contains("🔴", notice!);
     }
 
     [Fact]
-    public void FactsForced_IsFacts_NoNotice_EvenWithKeyOrSampling()
+    public void FactsForced_IsFacts_NoDisclaimer_EvenWithKeyOrSampling()
     {
         var (mode, notice) = NarratorResolver.Decide(keyConfigured: true, factsForced: true, samplingSupported: true);
         Assert.Equal(NarrationMode.Facts, mode);
@@ -43,20 +46,20 @@ public sealed class NarratorResolverTests
     }
 
     [Fact]
-    public async Task Resolve_NullServer_NoKey_FallsBackToFacts()
+    public async Task Resolve_NullServer_NoKey_HostInterprets()
     {
-        // No live server (null) means sampling is not available → facts + notice.
+        // No live server (null) means sampling is not available → host interprets + red disclaimer.
         var (narrator, notice) = await new NarratorResolver(new HttpClient(), factsForced: false).ResolveAsync(null);
         Assert.NotNull(narrator);
-        // With no key configured in the test environment, this is the facts fallback.
+        // With no key configured in the test environment, this is the host-interpretation fallback.
         if (!Llm.AnthropicByoProvider.IsConfigured)
-            Assert.Equal(NarratorResolver.FactsNotice, notice);
+            Assert.Equal(NarratorResolver.HostInterpretDisclaimer, notice);
     }
 
     [Fact]
-    public async Task Notice_IsGuaranteed_InTheFirstBlocksUncertainty()
+    public async Task Disclaimer_IsGuaranteed_InTheFirstBlocksUncertainty()
     {
-        // The mode notice must be shown by construction, not left to the host: it rides the first
+        // The disclaimer must be shown by construction, not left to the host: it rides the first
         // block's uncertainty (co-presence guarantee). Runs only when no key is configured.
         if (Llm.AnthropicByoProvider.IsConfigured)
             return;
@@ -71,8 +74,8 @@ public sealed class NarratorResolverTests
 
             var plan = await engine.GetReviewPlanAsync(new Core.Source.Local("working"));
 
-            Assert.Equal(NarratorResolver.FactsNotice, plan.Notice);
-            Assert.Contains(NarratorResolver.FactsNotice, plan.FirstBlock.Explanation.Uncertainty!);
+            Assert.Equal(NarratorResolver.HostInterpretDisclaimer, plan.Notice);
+            Assert.Contains(NarratorResolver.HostInterpretDisclaimer, plan.FirstBlock.Explanation.Uncertainty!);
         }
         finally
         {

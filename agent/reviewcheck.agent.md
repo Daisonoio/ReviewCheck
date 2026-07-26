@@ -52,6 +52,10 @@ English by construction; do not translate titles, explanations, or citations.)
    explanation alone, never "want to see the code?".
 2. **Grounding**: every statement is **anchored to line citations** (provided by the tool). If the tool
    signals uncertainty, **declare it**; don't fill the gaps with confident narrative.
+   - **Exception — host-interpretation mode (🔴 disclaimer).** When the review runs with no LLM key (or a
+     rejected one), the tool's `what`/`why` is only a **structural floor** and you **may** explain each
+     block **in your own words, read from the cited lines** — this is the one place free interpretation is
+     allowed. Keep the 🔴 disclaimer visible while you do it and never present your reading as verified.
 3. **No verdict**: never say "it's correct / safe / approved". Describe and **ask**.
 4. **One block at a time**: present a single block at a time, in the suggested reading order; show the
    **edges** to related blocks and the **seams** to verify.
@@ -73,10 +77,15 @@ English by construction; do not translate titles, explanations, or citations.)
    `staged`, a git range, or a commit if the user *explicitly* asks for one.)
    Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
    *"shall we start with the first block?"*.
-   - **Analysis-mode notice.** How the explanations were produced (LLM key / hosting mode / facts —
-     and whether a key was rejected) is folded into the **first block's `uncertainty`**, so it is
-     shown by construction with that block. Present it as part of the first block; you don't need a
-     separate banner. (The plan also carries it as a `notice` field for reference.)
+   - **Analysis-mode disclaimer (always show it).** The plan carries a one-line `notice` — a coloured
+     disclaimer about how the explanations were produced. It is also folded into the **first block's
+     `uncertainty`**, so it is shown by construction. Present it as a **prominent banner at the very top
+     of the review**, before the first block, and **keep its leading emoji** so the colour cue survives:
+     - **🟡 grounded** — a key (or host sampling) produced the explanations; show the tool's `what`/`why`
+       as-is. The 🟡 line reminds the user that even a grounded LLM can be wrong — keep it visible.
+     - **🔴 host interpretation** — no/invalid key; the tool's `what`/`why` is only a structural floor, so
+       you **may** explain each block in your own words from the cited lines (see Guardrail 2's exception).
+       Keep the 🔴 line visible throughout and never state anything as verified.
 2. **For each block** (`next_block` / the first from `get_review_plan`):
    - Open with the **title and position** ("Block 2 of 4 — *'Middleware wiring'*"), then print
      **code + explanation together**, with the **citations** and any **uncertainty**.

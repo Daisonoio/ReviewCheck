@@ -52,8 +52,8 @@ public static class McpServerSetup
             Console.Error.WriteLine(factsForced
                 ? "[reviewcheck] narrator: facts-only (forced by REVIEWCHECK_NARRATOR=facts)."
                 : AnthropicByoProvider.IsConfigured
-                    ? "[reviewcheck] narrator: LLM (Anthropic BYO key)."
-                    : "[reviewcheck] narrator: no key — will use host sampling if the host supports it, else facts.");
+                    ? "[reviewcheck] narrator: LLM (Anthropic BYO key) — grounded, 🟡 disclaimer (validated per review)."
+                    : "[reviewcheck] narrator: no key — host model interprets the code, 🔴 disclaimer (or host sampling if supported).");
         }
 
         builder.Services.AddSingleton(_ => new SessionStore());
