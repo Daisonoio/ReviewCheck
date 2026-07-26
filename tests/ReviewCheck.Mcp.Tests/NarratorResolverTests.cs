@@ -52,4 +52,31 @@ public sealed class NarratorResolverTests
         if (!Llm.AnthropicByoProvider.IsConfigured)
             Assert.Equal(NarratorResolver.FactsNotice, notice);
     }
+
+    [Fact]
+    public async Task Notice_IsGuaranteed_InTheFirstBlocksUncertainty()
+    {
+        // The mode notice must be shown by construction, not left to the host: it rides the first
+        // block's uncertainty (co-presence guarantee). Runs only when no key is configured.
+        if (Llm.AnthropicByoProvider.IsConfigured)
+            return;
+
+        var root = Path.Combine(Path.GetTempPath(), "rc-notice-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var engine = new ReviewEngine(
+                new Provider.StubProvider(),
+                new Session.SessionStore(root),
+                new NarratorResolver(new HttpClient(), factsForced: false));
+
+            var plan = await engine.GetReviewPlanAsync(new Core.Source.Local("working"));
+
+            Assert.Equal(NarratorResolver.FactsNotice, plan.Notice);
+            Assert.Contains(NarratorResolver.FactsNotice, plan.FirstBlock.Explanation.Uncertainty!);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
 }

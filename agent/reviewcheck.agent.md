@@ -73,9 +73,10 @@ English by construction; do not translate titles, explanations, or citations.)
    `staged`, a git range, or a commit if the user *explicitly* asks for one.)
    Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
    *"shall we start with the first block?"*.
-   - **If the plan carries a `notice`, show it once as a short banner** at the very top, before the
-     first block (e.g. *"ℹ️ Hosting mode…"* or the deterministic-narrative note). It tells the user
-     how the explanations were produced; don't repeat it on every block.
+   - **Analysis-mode notice.** How the explanations were produced (LLM key / hosting mode / facts —
+     and whether a key was rejected) is folded into the **first block's `uncertainty`**, so it is
+     shown by construction with that block. Present it as part of the first block; you don't need a
+     separate banner. (The plan also carries it as a `notice` field for reference.)
 2. **For each block** (`next_block` / the first from `get_review_plan`):
    - Open with the **title and position** ("Block 2 of 4 — *'Middleware wiring'*"), then print
      **code + explanation together**, with the **citations** and any **uncertainty**.

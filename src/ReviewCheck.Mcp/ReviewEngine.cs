@@ -40,7 +40,22 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store, N
             .Select(p => new InteractionPointView(p.Text, p.BlockIds))
             .ToList();
 
+        // The mode notice is honesty-critical (it tells the user how the explanations were produced),
+        // so it must not depend on the host choosing to render a plan-level banner. Fold it into the
+        // FIRST block's uncertainty — which rides the co-presence guarantee and is always shown —
+        // so the disclosure is guaranteed, not merely instructed. It appears once, on the first block.
         var first = BlockGuard.Ensure(analyzed.Blocks[0]);
+        if (!string.IsNullOrWhiteSpace(notice))
+            first = first with
+            {
+                Explanation = first.Explanation with
+                {
+                    Uncertainty = string.IsNullOrWhiteSpace(first.Explanation.Uncertainty)
+                        ? notice
+                        : $"{notice}\n\n{first.Explanation.Uncertainty}"
+                }
+            };
+
         return new ReviewPlanResult(session, analyzed.Title, analyzed.EstimatedMinutes, summaries, seams, BlockView.From(first), notice);
     }
 
