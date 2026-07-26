@@ -324,6 +324,18 @@ The two halves live in two places, so a change may need either step — or both:
 > one lacks *synchronized output*, which can garble characters while a block is being drawn. It's a
 > display artifact only; the code and citations in the payload are intact.
 
+### Container & reproducible dev environment
+
+Build and run the server as a container — it reads the repo mounted at `/repo` via git:
+
+```bash
+docker build -t reviewcheck .
+docker run -i --rm -v "$PWD:/repo" -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-... reviewcheck
+```
+
+For development, open the repo in the **[devcontainer](.devcontainer/devcontainer.json)** to get the
+pinned .NET 8 toolchain in a sandbox — identical for every contributor and agent.
+
 > **Design docs:** the contracts are the source of truth —
 > [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
 > plans are [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md); the agent is

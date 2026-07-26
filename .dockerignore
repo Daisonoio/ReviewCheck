@@ -1,0 +1,14 @@
+# Keep the build context small and reproducible: never ship build output or local state.
+**/bin/
+**/obj/
+.git/
+.github/
+.reviewcheck/
+.test-repo/
+bin/
+artifacts/
+eval-report.json
+*.user
+.vs/
+.vscode/
+.idea/

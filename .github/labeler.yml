@@ -1,0 +1,54 @@
+# PR auto-labels by changed area (actions/labeler v5). Triage as code.
+"area: core":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Core/**"
+
+"area: platform":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Platform/**"
+
+"area: pipeline":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Pipeline/**"
+
+"area: llm":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Llm/**"
+
+"area: mcp":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Mcp/**"
+
+"area: session":
+  - changed-files:
+      - any-glob-to-any-file: "src/ReviewCheck.Session/**"
+
+"area: eval":
+  - changed-files:
+      - any-glob-to-any-file: "eval/**"
+
+"agent-context":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "AGENTS.md"
+          - "CLAUDE.md"
+          - "agent/**"
+          - ".claude/**"
+
+"tests":
+  - changed-files:
+      - any-glob-to-any-file: "tests/**"
+
+"ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "Dockerfile"
+          - ".devcontainer/**"
+
+"documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+          - "spec/**"

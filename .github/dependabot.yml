@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # NuGet packages across the solution. Grouped into a single PR to keep review toil low.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
+  # The GitHub Actions used by CI and PR triage.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
