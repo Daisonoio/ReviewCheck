@@ -176,6 +176,7 @@ tests/                One xUnit project per src project (134 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
+eval/                 Capability eval suite: scores the guardrails over a corpus, gates CI (eval/README.md)
 GUARDRAILS.md         Guardrails and how each is enforced
 ```
 
@@ -333,8 +334,9 @@ The MVP is built and runnable — a good moment to extend it. Ways to help:
 
 - **Posting to a PR** — a future milestone: read/post a GitHub review from the same block flow.
 - **Language support** — additional language analyzers beyond C# (Roslyn).
-- **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
-  deferred until after the MVP (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §5).
+- **Evals** — grow the [capability suite](eval/README.md): the guardrails (grounding, no-verdict,
+  co-presence, degradation, declared uncertainty) are scored over a corpus and gate CI. Add cases to
+  `eval/ReviewCheck.Evals/corpus/`, or new capability checks.
 - **Cognitive-accessibility research** — help design/run the Phase-0 study with neurodivergent
   developers (*"nothing about us without us"*).
 - **Docs** — English translation of the design docs.

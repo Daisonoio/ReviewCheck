@@ -13,9 +13,40 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      # Cache restored packages to cut CI latency on repeat runs.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
       - name: Restore
         run: dotnet restore ReviewCheck.sln
       - name: Build
         run: dotnet build ReviewCheck.sln --configuration Release --no-restore
       - name: Test
         run: dotnet test ReviewCheck.sln --configuration Release --no-build --verbosity normal
+
+  capability-evals:
+    # Treat the agent-capability guardrails (grounding, no-verdict, degradation, …) as a gate:
+    # a capability regression fails the build, exactly like a failing test.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Run capability eval suite
+        run: dotnet run --project eval/ReviewCheck.Evals/ReviewCheck.Evals.csproj -c Release
+      - name: Upload capability scorecard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval-report.json

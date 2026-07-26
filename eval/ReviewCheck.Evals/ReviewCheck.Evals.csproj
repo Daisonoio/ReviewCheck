@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- The eval harness is a self-contained runner; nothing depends on it. -->
+  </PropertyGroup>
+
+  <!--
+    The corpus files are DATA, not code: they are sample sources fed through the analysis
+    pipeline at runtime. Exclude them from compilation and copy them next to the binary so the
+    runner (and CI) can read them from AppContext.BaseDirectory/corpus.
+  -->
+  <ItemGroup>
+    <Compile Remove="corpus/**/*.cs" />
+    <Content Include="corpus/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ReviewCheck.Core\ReviewCheck.Core.csproj" />
+    <ProjectReference Include="..\..\src\ReviewCheck.Platform\ReviewCheck.Platform.csproj" />
+    <ProjectReference Include="..\..\src\ReviewCheck.Pipeline\ReviewCheck.Pipeline.csproj" />
+    <ProjectReference Include="..\..\src\ReviewCheck.Llm\ReviewCheck.Llm.csproj" />
+  </ItemGroup>
+
+</Project>
