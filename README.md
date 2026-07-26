@@ -95,23 +95,22 @@ flowchart LR
 You:  review the changes I just wrote, before I open the PR
 
 Agent: [get_review_plan({type:"local"})]   ← reads git diff locally, no token/network
-  Rate limiting for the public API. 6 blocks.
-  Seam to check (from the graph): "allow() can return False → check every caller handles it".
+  Discount pricing rules. 6 blocks across 5 files.
+  Seam to check (from the graph): "Clamp() caps the percentage → check ApplyDiscount uses it".
 
-  ── Block 1/6 ──  rate_limiter/limiter.py (new)
-    class TokenBucket:
-        def allow(self, key): ...
-  WHAT: token-bucket limiter, the core of the change.        (cites limiter.py:1-11)
-  WHY:  decides whether a request passes or is rejected.
-  LINKS: used by the middleware (block 3), params from block 2.
-  ⚠ Uncertainty: could not resolve `_refill` (defined elsewhere).
+  ── Block 2/6 ──  src/TestProject/PricingRules.cs (lines 8–9)
+    public static int Clamp(int percent) =>
+        percent < 0 ? 0 : percent > MaxDiscountPercent ? MaxDiscountPercent : percent;
+  WHAT:  constrains a discount between 0 and MaxDiscountPercent.   (cites PricingRules.cs:8-9)
+  WHY:   keeps every discount within the 50% cap defined in block 1.
+  LINKS: uses 'MaxDiscountPercent' (block 1); used by 'ApplyDiscount' (block 3).
   Accept this block, or request a correction?
 
-You:  what if key is null? request a correction
+You:  what if percent is negative on the way in? request a correction
 Agent: recorded. Next block?
   ...
   → Outcome: CORRECTIONS TO APPLY (nothing posted).
-    • block 1: "handle key=null in allow()"
+    • block 2: "double-check the negative-percent branch of Clamp"
     Fix these, then open the PR.
 ```
 </details>
@@ -271,6 +270,22 @@ or just ask: *"review my changes with ReviewCheck"*. It reads the local `git dif
 **including new untracked files**), splits it into ordered blocks, and walks you through them one at a
 time — **accept** or **request a correction** per block — then a final outcome that is the sum of your
 decisions. Nothing is ever posted.
+
+### Try it on the sample repo — TestRepo
+
+Don't have a change handy? **[Daisonoio/TestRepo](https://github.com/Daisonoio/TestRepo)** is a tiny C#
+project built specifically to exercise the flow — the discount-pricing example used throughout this
+README. It ships a script that stages a realistic multi-file change (a new constant, a `Clamp` helper, a
+`DiscountCalculator`, and the call sites) so you get an interesting diff to review in one command:
+
+```bash
+git clone https://github.com/Daisonoio/TestRepo.git
+cd TestRepo
+# generate the change to review (see the repo's README for the script)
+```
+
+Then open Claude Code in `TestRepo` and run `/reviewcheck.agent`. See that repo's
+[`README`](https://github.com/Daisonoio/TestRepo#readme) for the exact steps and the change script.
 
 ### Analysis modes
 
