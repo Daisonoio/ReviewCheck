@@ -76,6 +76,7 @@ public sealed class NarratorResolver(HttpClient http, bool factsForced)
         }
 
         var samplingSupported = server?.ClientCapabilities?.Sampling is not null;
+        LogClientCapabilitiesOnce(server, samplingSupported);
         var (mode, notice) = Decide(keyUsable, factsForced, samplingSupported);
         if (keyRejected)
             notice = (KeyRejectedPrefix + (notice ?? "")).Trim();
@@ -87,6 +88,25 @@ public sealed class NarratorResolver(HttpClient http, bool factsForced)
             _ => new FactsNarrator(),
         };
         return (narrator, string.IsNullOrWhiteSpace(notice) ? null : notice);
+    }
+
+    // Diagnostic (stderr, once per process): the exact capabilities the host declared at the MCP
+    // handshake — so whether the host supports `sampling` is observed, not inferred. Visible via
+    // `claude --debug` in the reviewcheck server stderr.
+    private static bool _capsLogged;
+    private static void LogClientCapabilitiesOnce(McpServer? server, bool samplingSupported)
+    {
+        if (_capsLogged) return;
+        _capsLogged = true;
+
+        var caps = server?.ClientCapabilities;
+        string raw;
+        try { raw = caps is null ? "<null>" : System.Text.Json.JsonSerializer.Serialize(caps); }
+        catch (Exception e) { raw = $"<unserializable: {e.Message}>"; }
+
+        Console.Error.WriteLine(
+            $"[reviewcheck] host sampling capability: {(samplingSupported ? "PRESENT" : "absent")} " +
+            $"— client capabilities: {raw}");
     }
 #pragma warning restore MCP9005
 
