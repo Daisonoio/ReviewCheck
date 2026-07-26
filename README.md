@@ -3,7 +3,7 @@
 **Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
 ![status](https://img.shields.io/badge/status-MVP%20built%20·%20local-brightgreen)
-![tests](https://img.shields.io/badge/tests-124%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -17,7 +17,7 @@
 
 > [!IMPORTANT]
 > **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
-> the grounded LLM narration layer (MVP-3) are implemented, covered by **124 passing tests**, and
+> the grounded LLM narration layer (MVP-3) are implemented, covered by **134 passing tests**, and
 > verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
 > accept / request-correction → outcome. C# (Roslyn) is the supported language. See
 > [Getting started](#getting-started) to run it.
@@ -173,7 +173,7 @@ src/                  The .NET solution (net8.0):
   ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
   ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
   ReviewCheck.Mcp         The MCP server: the 7 tools + narrator wiring
-tests/                One xUnit project per src project (124 tests)
+tests/                One xUnit project per src project (134 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/                The product agent definition (reviewcheck.agent.md)
@@ -185,14 +185,19 @@ GUARDRAILS.md         Guardrails and how each is enforced
 
 ## Getting started
 
-**Prerequisites:** the [.NET 8 SDK](https://dotnet.microsoft.com/download) and `git` on your `PATH`.
+The verified host is **Claude Code**. The setup has two halves: the **MCP server** (the deterministic
+engine, a .NET binary) and the **agent command** (the `.md` that turns the tools into a guided `/reviewcheck`
+flow). You install both once, globally, and then use it from **any** repository.
 
-### 1. Build and test
+**Prerequisites:** the [.NET 8 SDK](https://dotnet.microsoft.com/download), `git`, and
+[Claude Code](https://claude.com/claude-code) — all on your `PATH`.
+
+### 1. Clone, build, and test
 
 ```bash
 git clone https://github.com/Daisonoio/ReviewCheck.git
 cd ReviewCheck
-dotnet test        # 124 tests should pass
+dotnet test        # 134 tests should pass
 ```
 
 ### 2. Publish the MCP server
@@ -201,50 +206,106 @@ dotnet test        # 124 tests should pass
 dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o ./bin/mcp
 ```
 
-This produces `bin/mcp/ReviewCheck.Mcp.exe` (Windows) / `ReviewCheck.Mcp` (Linux/macOS).
+This produces the launcher the host will start: `bin/mcp/ReviewCheck.Mcp.exe` (Windows) or
+`bin/mcp/ReviewCheck.Mcp` (Linux/macOS). Note its **absolute** path — you need it next.
 
-### 3. Register it in your host agent
+### 3. Register the MCP server — once, globally
 
-For **Claude Code**, add the server to your `.mcp.json` (the key **must** be `mcpServers`):
+Use the Claude Code CLI (not a hand-edited config): `--scope user` registers it **for every repo**, so
+you never re-add it, and the CLI writes the correct `mcpServers` key for you.
 
-```json
-{
-  "mcpServers": {
-    "reviewcheck": {
-      "type": "stdio",
-      "command": "/absolute/path/to/ReviewCheck/bin/mcp/ReviewCheck.Mcp.exe",
-      "env": {
-        "REVIEWCHECK_REPO": "/absolute/path/to/the/repo/you/want/to/review",
-        "REVIEWCHECK_ANTHROPIC_KEY": "sk-ant-..."
-      }
-    }
-  }
-}
+```bash
+# Windows (PowerShell)
+claude mcp add reviewcheck --scope user "C:\path\to\ReviewCheck\bin\mcp\ReviewCheck.Mcp.exe"
+
+# macOS / Linux
+claude mcp add reviewcheck --scope user /path/to/ReviewCheck/bin/mcp/ReviewCheck.Mcp
 ```
 
-Restart the host so it launches the server. On startup the server logs one line to stderr naming the
-active narrator — `narrator: LLM (...)` or `narrator: facts-only (...)` — so you always know which path
-is live.
+Add a key for richer explanations (optional — see [Analysis modes](#analysis-modes)):
 
-### 4. Use it
+```bash
+claude mcp add reviewcheck --scope user "C:\path\to\...\ReviewCheck.Mcp.exe" \
+  -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-api03-YOUR-REAL-KEY
+```
 
-Open your host agent in the target repository, make (or let the agent make) some changes, and ask:
+Verify it connected:
 
-> *review my changes with ReviewCheck*
+```bash
+claude mcp get reviewcheck     # shows the command, env, and connection status
+```
 
-It reads the local `git diff` (uncommitted changes, **including new untracked files**), splits it into
-ordered blocks, and walks you through them — accept or request a correction per block, then a final
-outcome that is the sum of your decisions.
+> [!TIP]
+> **Windows `.mcp.json` gotcha.** If you have a project-level `.mcp.json` that uses the key `"servers"`
+> (some other MCP tools do), Claude Code will log `Missing "mcpServers" — found "servers"`. That's a
+> *different* file and is harmless to ReviewCheck when you register with `--scope user` as above — the
+> user-scope registration is the one that counts.
+
+### 4. Install the agent command — once, globally
+
+The server exposes tools; the **agent** turns them into the guided flow. Copy the agent definition into
+Claude Code's user commands folder so `/reviewcheck` is available everywhere:
+
+```bash
+# Windows (PowerShell)
+Copy-Item ".\.claude\agents\reviewcheck.agent.md" "$env:USERPROFILE\.claude\commands\reviewcheck.agent.md" -Force
+
+# macOS / Linux
+mkdir -p ~/.claude/commands && cp ./.claude/agents/reviewcheck.agent.md ~/.claude/commands/reviewcheck.agent.md
+```
+
+Restart Claude Code so it re-reads commands and launches the server. On startup the server logs one line
+to stderr naming the active narrator (visible with `claude --debug`), e.g.
+`[reviewcheck] narrator: no key — host model interprets the code, 🔴 disclaimer …`.
+
+### 5. Use it
+
+Open Claude Code **in the repository you want to review**, make (or let the agent make) some changes,
+then run:
+
+```
+/reviewcheck.agent
+```
+
+or just ask: *"review my changes with ReviewCheck"*. It reads the local `git diff` (uncommitted changes,
+**including new untracked files**), splits it into ordered blocks, and walks you through them one at a
+time — **accept** or **request a correction** per block — then a final outcome that is the sum of your
+decisions. Nothing is ever posted.
+
+### Analysis modes
+
+How the explanations are produced depends on whether a valid LLM key is present. Either way a
+**coloured disclaimer** is shown at the top of the review, so the trust level is never ambiguous:
+
+| Mode | When | Narrator | Disclaimer |
+|---|---|---|---|
+| **Grounded** | a valid `REVIEWCHECK_ANTHROPIC_KEY` is set | LLM explanations, bound to line citations and checked by the rubric | 🟡 *LLMs can give incorrect guidance — review the proposed code carefully.* |
+| **Host interpretation** | no key, or the key is rejected | the deterministic structural facts, which **your host model** may interpret in its own words from the cited lines | 🔴 *No LLM API key … interpreted by your host model … may be wrong or partial — review the code carefully.* |
+
+A rejected key behaves exactly like no key. To force the pure deterministic floor (no LLM at all), set
+`REVIEWCHECK_NARRATOR=facts`.
 
 ### Configuration (environment variables)
 
 | Variable | Effect |
 |---|---|
-| `REVIEWCHECK_ANTHROPIC_KEY` | Your Anthropic key (or `ANTHROPIC_API_KEY`). **Present → LLM explanations; absent → deterministic facts-only.** Never logged; code goes only to your account. |
-| `REVIEWCHECK_LLM_MODEL` | Model for narration (default `claude-sonnet-5`). |
-| `REVIEWCHECK_REPO` | Absolute path of the repository to review (defaults to the server's working directory). |
-| `REVIEWCHECK_NARRATOR` | Set to `facts` to force the deterministic floor even with a key (demos, offline, cost control). |
+| `REVIEWCHECK_ANTHROPIC_KEY` | Your Anthropic key (or `ANTHROPIC_API_KEY`). **Valid → grounded 🟡; absent/rejected → host interpretation 🔴.** Never logged; code goes only to your account. Get one at [console.anthropic.com](https://console.anthropic.com) (API billing, separate from a Claude subscription). |
+| `REVIEWCHECK_LLM_MODEL` | Model for grounded narration (default `claude-sonnet-5`). |
+| `REVIEWCHECK_REPO` | Absolute path of the repository to review (defaults to the directory Claude Code launched the server in — usually the repo you opened). |
+| `REVIEWCHECK_NARRATOR` | Set to `facts` to force the deterministic floor with no LLM at all (demos, offline, cost control). |
 | `REVIEWCHECK_PROVIDER` | Set to `stub` to use the fixture provider instead of the real pipeline (demos/tests without a repo). |
+
+### Updating after a `git pull`
+
+The two halves live in two places, so a change may need either step — or both:
+
+- **Server changed** (anything under `src/`): re-run **step 2** (`dotnet publish`), then restart Claude Code.
+- **Agent changed** (`.claude/agents/reviewcheck.agent.md`): re-run the **copy in step 4**, then restart.
+
+> [!TIP]
+> On Windows, use a modern terminal (**Windows Terminal**) rather than the legacy console — the legacy
+> one lacks *synchronized output*, which can garble characters while a block is being drawn. It's a
+> display artifact only; the code and citations in the payload are intact.
 
 > **Design docs:** the contracts are the source of truth —
 > [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
