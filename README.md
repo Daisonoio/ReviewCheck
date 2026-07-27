@@ -277,6 +277,41 @@ on the `claude mcp add` command itself.
 claude mcp get reviewcheck     # shows the command, env, and connection status
 ```
 
+#### Verified end-to-end — Windows
+
+> [!NOTE]
+> Option B (Docker) has been run start-to-finish on a **clean Windows 11 machine with only Docker
+> Desktop, the Claude Code CLI, and the .NET 8 SDK installed — nothing else** — through to a real
+> review of [TestRepo](#try-it-on-the-sample-repo--testrepo) (24 blocks across 12 files, correct
+> 🔴/🟡 disclaimer, code + explanation shown together, accept/request-correction working). This is
+> the exact sequence that was confirmed working:
+
+```powershell
+git clone https://github.com/Daisonoio/ReviewCheck.git
+cd ReviewCheck
+dotnet test                                            # sanity check: SDK works
+
+docker build -t reviewcheck .
+
+claude mcp add reviewcheck --scope user cmd -- /c "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.cmd"
+claude mcp get reviewcheck                             # must show "Connected"
+
+Copy-Item ".\.claude\agents\reviewcheck.agent.md" "$env:USERPROFILE\.claude\commands\reviewcheck.agent.md" -Force
+# restart Claude Code so it re-reads the command and the server
+
+git clone https://github.com/Daisonoio/TestRepo.git
+cd TestRepo
+.\scripts\make-change.ps1
+# open Claude Code in this TestRepo folder, then run /reviewcheck.agent
+```
+
+> [!IMPORTANT]
+> **Platform scope of this verification.** The steps above — and the `cmd`-over-PowerShell fix in
+> the note above — were validated on **Windows only**. Option A (native binary) and the macOS/Linux
+> side of Option B (`reviewcheck-docker.sh`) are written on the same principles and reviewed for
+> correctness, but have **not** been run end-to-end on real macOS/Linux hardware. If you hit something
+> there that this README doesn't account for, please open an issue.
+
 > [!TIP]
 > **Windows `.mcp.json` gotcha.** If you have a project-level `.mcp.json` that uses the key `"servers"`
 > (some other MCP tools do), Claude Code will log `Missing "mcpServers" — found "servers"`. That's a
