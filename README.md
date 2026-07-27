@@ -202,7 +202,12 @@ cd ReviewCheck
 dotnet test        # 134 tests should pass
 ```
 
-### 2. Publish the MCP server
+### 2-3. Build and register the MCP server — once, globally
+
+Pick **one** of the two options below. Either way, `--scope user` registers the server **for every
+repo** — you never re-add it, and the CLI writes the correct `mcpServers` key for you.
+
+#### Option A — native binary (simplest, no Docker needed)
 
 ```bash
 dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o ./bin/mcp
@@ -210,11 +215,6 @@ dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o ./bin/mc
 
 This produces the launcher the host will start: `bin/mcp/ReviewCheck.Mcp.exe` (Windows) or
 `bin/mcp/ReviewCheck.Mcp` (Linux/macOS). Note its **absolute** path — you need it next.
-
-### 3. Register the MCP server — once, globally
-
-Use the Claude Code CLI (not a hand-edited config): `--scope user` registers it **for every repo**, so
-you never re-add it, and the CLI writes the correct `mcpServers` key for you.
 
 ```bash
 # Windows (PowerShell)
@@ -231,7 +231,37 @@ claude mcp add reviewcheck --scope user "C:\path\to\...\ReviewCheck.Mcp.exe" \
   -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-api03-YOUR-REAL-KEY
 ```
 
-Verify it connected:
+#### Option B — Docker (no local .NET SDK needed at review time)
+
+Build the image once (and again whenever `src/` changes):
+
+```bash
+docker build -t reviewcheck .
+```
+
+> [!WARNING]
+> **Don't register `docker run -v "$PWD:/repo" ... reviewcheck` directly.** Claude Code stores the
+> literal command you give it — it does not re-run a shell per launch — so `$PWD` would be resolved
+> **once, at registration time**, and silently keep pointing at that folder forever, no matter which
+> repo you later open. Register the wrapper script below instead: Claude Code launches *it* fresh for
+> every session with its working directory set to the open project, so the mount is resolved correctly
+> at every launch — the same "register once" property Option A has.
+
+```bash
+# Windows (PowerShell) — register the wrapper, not `docker run` directly
+claude mcp add reviewcheck --scope user pwsh -- -File "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.ps1"
+
+# macOS / Linux
+claude mcp add reviewcheck --scope user /path/to/ReviewCheck/scripts/reviewcheck-docker.sh
+```
+
+The wrapper ([`scripts/reviewcheck-docker.sh`](scripts/reviewcheck-docker.sh) /
+[`.ps1`](scripts/reviewcheck-docker.ps1)) forwards `REVIEWCHECK_ANTHROPIC_KEY`, `ANTHROPIC_API_KEY`,
+`REVIEWCHECK_LLM_MODEL`, and `REVIEWCHECK_NARRATOR` straight through if you set them — same effect as
+the `-e` flag in Option A. Set them on your machine (or export them before launching Claude Code), not
+on the `claude mcp add` command itself.
+
+#### Verify either option connected
 
 ```bash
 claude mcp get reviewcheck     # shows the command, env, and connection status
@@ -317,7 +347,8 @@ A rejected key behaves exactly like no key. To force the pure deterministic floo
 
 The two halves live in two places, so a change may need either step — or both:
 
-- **Server changed** (anything under `src/`): re-run **step 2** (`dotnet publish`), then restart Claude Code.
+- **Server changed** (anything under `src/`): re-run the build for whichever option you used —
+  `dotnet publish` (Option A) or `docker build -t reviewcheck .` (Option B) — then restart Claude Code.
 - **Agent changed** (`.claude/agents/reviewcheck.agent.md`): re-run the **copy in step 4**, then restart.
 
 > [!TIP]
@@ -327,23 +358,21 @@ The two halves live in two places, so a change may need either step — or both:
 
 ### Container & reproducible dev environment
 
-Build and run the server as a container — it reads the repo mounted at `/repo` via git:
+Build and run the server as a container by hand — useful for a one-off smoke test, or to confirm the
+image itself works — it reads the repo mounted at `/repo` via git:
 
 ```bash
 docker build -t reviewcheck .
 docker run -i --rm -v "$PWD:/repo" -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-... reviewcheck
 ```
 
+To actually **register** the container with Claude Code for day-to-day use (so it works across every
+repo you open, not just the one that was current when you ran `docker run`), don't register that raw
+command — see **[Option B](#2-3-build-and-register-the-mcp-server--once-globally)** in Getting started,
+which uses a small wrapper script to resolve the mount correctly on every launch.
+
 For development, open the repo in the **[devcontainer](.devcontainer/devcontainer.json)** to get the
 pinned .NET 8 toolchain in a sandbox — identical for every contributor and agent.
-
-> [!WARNING]
-> **Don't register the container with `claude mcp add --scope user`.** The `-v "$PWD:/repo"` mount is
-> resolved once, at registration time, to whatever directory was current then — it does **not**
-> follow you to whichever repo you later open in Claude Code. Registered this way, the server silently
-> keeps reviewing the original folder instead of your actual project, with no error. The container is
-> for building/running the server standalone or for the devcontainer dev loop, not for the day-to-day
-> "review any repo" flow — for that, use the published binary in [step 3](#3-register-the-mcp-server--once-globally).
 
 > **Design docs:** the contracts are the source of truth —
 > [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
