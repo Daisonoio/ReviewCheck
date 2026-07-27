@@ -28,3 +28,7 @@ Thumbs.db
 
 # Eval runner output (regenerated each run)
 eval-report.json
+
+
+# Local MCP registration (machine-specific, never shipped)
+.mcp.json
