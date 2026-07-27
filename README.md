@@ -248,7 +248,10 @@ docker build -t reviewcheck .
 > at every launch — the same "register once" property Option A has.
 
 ```bash
-# Windows — register the wrapper, not `docker run` directly, and via `cmd`, not PowerShell.
+# Windows — register the wrapper, not `docker run` directly, and via  PowerShell.
+claude mcp add reviewcheck --scope user powershell -- /c "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.cmd"
+
+#If not working try via 'cmd'
 claude mcp add reviewcheck --scope user cmd -- /c "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.cmd"
 
 # macOS / Linux
