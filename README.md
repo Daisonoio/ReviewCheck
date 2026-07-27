@@ -248,15 +248,25 @@ docker build -t reviewcheck .
 > at every launch — the same "register once" property Option A has.
 
 ```bash
-# Windows (PowerShell) — register the wrapper, not `docker run` directly
-claude mcp add reviewcheck --scope user pwsh -- -File "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.ps1"
+# Windows — register the wrapper, not `docker run` directly, and via `cmd`, not PowerShell.
+claude mcp add reviewcheck --scope user cmd -- /c "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.cmd"
 
 # macOS / Linux
 claude mcp add reviewcheck --scope user /path/to/ReviewCheck/scripts/reviewcheck-docker.sh
 ```
 
+> [!NOTE]
+> **Windows: use the `.cmd` wrapper, not PowerShell.** When Claude Code launches a subprocess with
+> redirected (piped) stdio rather than a real console — exactly how it starts an MCP server —
+> PowerShell (both Windows PowerShell and `pwsh`) can re-interpret or buffer the child process's raw
+> output instead of passing it through untouched, silently corrupting the MCP JSON-RPC stream. This
+> manifests as `claude mcp get reviewcheck` reporting a connection **timeout with no logs at all**,
+> even though the container itself is completely healthy (confirmed by running it directly with
+> `docker run -it`). `cmd.exe` does not reinterpret the child's output, so it doesn't hit this —
+> that's why the wrapper is a `.cmd`, not a `.ps1`, on Windows.
+
 The wrapper ([`scripts/reviewcheck-docker.sh`](scripts/reviewcheck-docker.sh) /
-[`.ps1`](scripts/reviewcheck-docker.ps1)) forwards `REVIEWCHECK_ANTHROPIC_KEY`, `ANTHROPIC_API_KEY`,
+[`.cmd`](scripts/reviewcheck-docker.cmd)) forwards `REVIEWCHECK_ANTHROPIC_KEY`, `ANTHROPIC_API_KEY`,
 `REVIEWCHECK_LLM_MODEL`, and `REVIEWCHECK_NARRATOR` straight through if you set them — same effect as
 the `-e` flag in Option A. Set them on your machine (or export them before launching Claude Code), not
 on the `claude mcp add` command itself.
