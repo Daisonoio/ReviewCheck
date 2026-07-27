@@ -14,8 +14,10 @@
     Prerequisite: `docker build -t reviewcheck .` (from the ReviewCheck repo root) at least once, and
     again whenever src/ changes.
 
-    Register this script itself — not the raw `docker run` command — with Claude Code:
-        claude mcp add reviewcheck --scope user pwsh -File "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.ps1"
+    Register this script itself — not the raw `docker run` command — with Claude Code. Use
+    `powershell` (Windows PowerShell 5.1, present by default) unless you have PowerShell 7 (`pwsh`)
+    installed separately — this script runs fine under either:
+        claude mcp add reviewcheck --scope user powershell -- -File "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.ps1"
 #>
 
 $ErrorActionPreference = 'Stop'
