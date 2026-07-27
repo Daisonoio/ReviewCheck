@@ -6,7 +6,7 @@
 ![tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
-![license](https://img.shields.io/badge/license-MIT-blue)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 > As AI agents write a growing share of our code, the scarce resource is no longer *writing* — it's
@@ -336,6 +336,14 @@ docker run -i --rm -v "$PWD:/repo" -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-... revie
 
 For development, open the repo in the **[devcontainer](.devcontainer/devcontainer.json)** to get the
 pinned .NET 8 toolchain in a sandbox — identical for every contributor and agent.
+
+> [!WARNING]
+> **Don't register the container with `claude mcp add --scope user`.** The `-v "$PWD:/repo"` mount is
+> resolved once, at registration time, to whatever directory was current then — it does **not**
+> follow you to whichever repo you later open in Claude Code. Registered this way, the server silently
+> keeps reviewing the original folder instead of your actual project, with no error. The container is
+> for building/running the server standalone or for the devcontainer dev loop, not for the day-to-day
+> "review any repo" flow — for that, use the published binary in [step 3](#3-register-the-mcp-server--once-globally).
 
 > **Design docs:** the contracts are the source of truth —
 > [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
