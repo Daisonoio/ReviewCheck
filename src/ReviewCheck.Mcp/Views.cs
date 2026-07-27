@@ -112,6 +112,23 @@ public sealed record SubmitResult(
     [property: JsonPropertyName("notes")] IReadOnlyList<NoteView>? Notes,
     [property: JsonPropertyName("undecided_blocks")] IReadOnlyList<string>? UndecidedBlocks);
 
+/// <summary>
+/// Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden
+/// evaluative language, and the correction/acceptance ratio. Never includes time-in-tool or any
+/// other measure of the reviewer — that guardrail is enforced by omission, not by a flag.
+/// </summary>
+public sealed record ReviewHealthResult(
+    [property: JsonPropertyName("total_blocks")] int TotalBlocks,
+    [property: JsonPropertyName("accepted")] int Accepted,
+    [property: JsonPropertyName("corrections")] int Corrections,
+    [property: JsonPropertyName("pending")] int Pending,
+    [property: JsonPropertyName("ungrounded_blocks")] int UngroundedBlocks,
+    [property: JsonPropertyName("ungrounded_pct")] double UngroundedPct,
+    [property: JsonPropertyName("evaluative_language_hits")] int EvaluativeLanguageHits,
+    [property: JsonPropertyName("flagged_block_ids")] IReadOnlyList<string> FlaggedBlockIds,
+    [property: JsonPropertyName("correction_rate_pct")] double? CorrectionRatePct,
+    [property: JsonPropertyName("note")] string Note);
+
 /// <summary>Enum → the exact snake_case tokens the spec uses on the wire.</summary>
 internal static class Wire
 {

@@ -173,6 +173,67 @@ public sealed class ReviewEngineTests : IDisposable
         Assert.False(result.Posted);
     }
 
+    // ---- review_health: local oversight signals (GUARDRAILS.md §4) ----
+
+    [Fact]
+    public async Task ReviewHealth_CountsDecisions_AndFindsNoGroundingGaps()
+    {
+        var engine = NewEngine();
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+        var ids = plan.Blocks.Select(b => b.Id).ToList();
+
+        engine.AcceptBlock(plan.Session, ids[0]);
+        engine.RequestCorrection(plan.Session, ids[1], "rename the field");
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(ids.Count, health.TotalBlocks);
+        Assert.Equal(1, health.Accepted);
+        Assert.Equal(1, health.Corrections);
+        Assert.Equal(ids.Count - 2, health.Pending);
+        Assert.Equal(50.0, health.CorrectionRatePct); // 1 correction / (1 accepted + 1 correction)
+
+        // BlockGuard guarantees grounding at construction — the stub fixture must show 0 gaps.
+        Assert.Equal(0, health.UngroundedBlocks);
+        Assert.Equal(0.0, health.UngroundedPct);
+    }
+
+    [Fact]
+    public async Task ReviewHealth_NothingDecidedYet_CorrectionRateIsNull()
+    {
+        var engine = NewEngine();
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(0, health.Accepted);
+        Assert.Equal(0, health.Corrections);
+        Assert.Null(health.CorrectionRatePct); // nothing decided — not "0% correction rate"
+    }
+
+    [Fact]
+    public async Task ReviewHealth_FlagsVerdictLanguage_UsingTheSameRubricVocabulary()
+    {
+        var engine = NewEngine();
+        var store = new SessionStore(_root);
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+
+        // Simulate a narrator slipping evaluative language past the seam into stored state.
+        var state = store.Load(plan.Session);
+        var tainted = state.Blocks[0] with
+        {
+            Explanation = state.Blocks[0].Explanation with { Why = "This implementation is correct and safe." },
+        };
+        var blocks = state.Blocks.ToList();
+        blocks[0] = tainted;
+        store.Save(state with { Blocks = blocks });
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(2, health.EvaluativeLanguageHits); // "correct" + "safe"
+        Assert.Contains(tainted.Id, health.FlaggedBlockIds);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))

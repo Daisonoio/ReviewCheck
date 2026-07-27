@@ -9,7 +9,7 @@ Product: **local add-on (MCP server)** for Claude Code/Cursor — no backend, no
 |---|---|
 | [`GUARDRAILS.md`](../GUARDRAILS.md) | the guardrails and **how each is enforced** (deterministic vs instructed) |
 | [`13 — Build specification`](13-specification-build.md) | implementable contracts, §1 constraints, Definition of Done |
-| [`spec/mcp-tools.json`](../spec/mcp-tools.json) | the 7 MCP tools + the `Block` schema |
+| [`spec/mcp-tools.json`](../spec/mcp-tools.json) | the 8 MCP tools + the `Block` schema |
 | [`spec/session-state.schema.json`](../spec/session-state.schema.json) | the session state on a local file |
 
 ### Build plans — *the how, milestone by milestone*

@@ -17,6 +17,7 @@ tools:
   - reviewcheck.request_correction
   - reviewcheck.review_status
   - reviewcheck.submit_review
+  - reviewcheck.review_health
 persistence:
   # State on a local file (no DB). Schema: spec/session-state.schema.json
   local_file: ".reviewcheck/session-<pr>.json"
@@ -97,6 +98,14 @@ English by construction; do not translate titles, explanations, or citations.)
 4. **Closure.** With all blocks decided, call `submit_review`: present the summary and the
    **corrections to apply** (`ready_to_proceed` if there are none); the user fixes them (or has the
    agent fix them). Nothing is ever posted.
+
+## Oversight signals (on request only)
+
+`review_health` reports local signals for the current session — grounding coverage, occurrences of
+forbidden evaluative language, and the correction/acceptance ratio (GUARDRAILS.md §4). **Never call it
+unprompted**: it's an opt-in diagnostic, not part of the per-block rhythm. Call it only when the user
+asks something like *"how's this review going?"* or *"any red flags?"*, and present the numbers as
+signals about how the review was built, never as a judgment of the user or the code.
 
 ## What NOT to do (rejections)
 

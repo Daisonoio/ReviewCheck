@@ -306,6 +306,46 @@
           }
         }
       }
+    },
+    {
+      "name": "review_health",
+      "description": "Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden evaluative language, and the correction/acceptance ratio. Read-only, no side effects, no network. Deliberately excludes anything that would measure the reviewer (time-in-tool, streaks) — not a verdict on the code or the human.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session" ],
+        "properties": { "session": { "type": "string" } }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "total_blocks", "accepted", "corrections", "pending", "ungrounded_blocks", "ungrounded_pct", "evaluative_language_hits", "flagged_block_ids", "note" ],
+        "properties": {
+          "total_blocks": { "type": "integer" },
+          "accepted": { "type": "integer" },
+          "corrections": { "type": "integer" },
+          "pending": { "type": "integer" },
+          "ungrounded_blocks": {
+            "type": "integer",
+            "description": "Blocks with zero citations. Should always be 0 — BlockGuard rejects an ungrounded block at construction (G2); a non-zero value signals a regression, not a normal finding."
+          },
+          "ungrounded_pct": { "type": "number" },
+          "evaluative_language_hits": {
+            "type": "integer",
+            "description": "Occurrences of the rubric's forbidden verdict vocabulary (G4) across all explanations in the session."
+          },
+          "flagged_block_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "correction_rate_pct": {
+            "type": [ "number", "null" ],
+            "description": "corrections / (accepted + corrections). Null when nothing is decided yet — not 0%."
+          },
+          "note": {
+            "type": "string",
+            "description": "Always present: reframes the signals as being about the review's construction, never a judgment of the code or the reviewer."
+          }
+        }
+      }
     }
   ],
   "forbidden_tools": {

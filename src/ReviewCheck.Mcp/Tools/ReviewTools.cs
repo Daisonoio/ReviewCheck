@@ -9,7 +9,7 @@ namespace ReviewCheck.Mcp.Tools;
 // sampling capability (hosting mode) and pick the narrator for this review.
 
 /// <summary>
-/// The 7 MCP tools (spec/mcp-tools.json). Thin adapters over <see cref="ReviewEngine"/>,
+/// The 8 MCP tools (spec/mcp-tools.json). Thin adapters over <see cref="ReviewEngine"/>,
 /// which carries the logic and the invariants. <c>engine</c> is injected from DI; the
 /// remaining parameters are the tools' inputs. Parameter names are the spec's snake_case.
 /// </summary>
@@ -50,6 +50,11 @@ public static class ReviewTools
     [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Posts nothing: returns a summary + the corrections to apply locally.")]
     public static SubmitResult SubmitReview(ReviewEngine engine, string session, bool confirm = false)
         => engine.SubmitReview(session, confirm);
+
+    [McpServerTool(Name = "review_health")]
+    [Description("Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden evaluative language, and the correction/acceptance ratio. Read-only, no side effects. Show only when the user asks — never surface unprompted, and never as a judgment of the reviewer.")]
+    public static ReviewHealthResult ReviewHealth(ReviewEngine engine, string session)
+        => engine.ReviewHealth(session);
 }
 
 /// <summary>Input for get_review_plan's <c>source</c> (spec/mcp-tools.json inputSchema).</summary>

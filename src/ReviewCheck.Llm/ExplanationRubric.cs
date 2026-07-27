@@ -26,6 +26,13 @@ public static partial class ExplanationRubric
     private static partial Regex FileReference();
 
     /// <summary>
+    /// Counts occurrences of the same forbidden verdict vocabulary <see cref="Violation"/> checks
+    /// (G4) in free text. Used by the oversight signals (GUARDRAILS.md §4) so "occurrences of
+    /// evaluative language" is measured with the exact rule that rejects it — one vocabulary, not two.
+    /// </summary>
+    public static int CountVerdictLanguage(string text) => VerdictLanguage().Matches(text).Count;
+
+    /// <summary>
     /// Returns the violated rule as a sentence, or null when the output is acceptable.
     /// <paramref name="related"/> are the blocks whose full code is in the prompt: references to
     /// their files/symbols are legitimate, so they widen the "known" set for the no-hallucination

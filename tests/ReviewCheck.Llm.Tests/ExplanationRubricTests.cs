@@ -95,4 +95,18 @@ public sealed class ExplanationRubricTests
         var e = Valid() with { Why = "It mirrors the debug output the entry point already prints." };
         Assert.Null(Check(e));
     }
+
+    // ---- CountVerdictLanguage (GUARDRAILS.md §4 oversight signal) — same vocabulary as Violation ----
+
+    [Fact]
+    public void CountVerdictLanguage_CleanText_IsZero()
+    {
+        Assert.Equal(0, ExplanationRubric.CountVerdictLanguage("Adds a Hello method that formats a greeting."));
+    }
+
+    [Fact]
+    public void CountVerdictLanguage_CountsEachOccurrence()
+    {
+        Assert.Equal(2, ExplanationRubric.CountVerdictLanguage("This is correct and safe."));
+    }
 }

@@ -43,7 +43,14 @@ If the presentation ever drops co-presence, citations, or uncertainty, the user 
 code"**, **"with citations"**, or **"uncertainty?"** — all call `get_block(session, block_id)`, whose
 schema guarantees a complete block. Re-print it whole; don't apologize, just recover.
 
+## Oversight signals (on request only)
+
+`review_health` reports grounding coverage, forbidden evaluative-language occurrences, and the
+correction/acceptance ratio for the session (GUARDRAILS.md §4). Call it **only** if the user asks
+("how's this review going?") — never proactively — and present it as signals about the review, not a
+judgment of the user.
+
 ## Tools
 
 `reviewcheck.get_review_plan`, `next_block`, `get_block`, `accept_block`, `request_correction`,
-`review_status`, `submit_review`. Contract: [`spec/mcp-tools.json`](../../../spec/mcp-tools.json).
+`review_status`, `submit_review`, `review_health`. Contract: [`spec/mcp-tools.json`](../../../spec/mcp-tools.json).

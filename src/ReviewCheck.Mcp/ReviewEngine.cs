@@ -1,12 +1,13 @@
 using ModelContextProtocol.Server;
 using ReviewCheck.Core;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Session;
 
 namespace ReviewCheck.Mcp;
 
 /// <summary>
-/// The deterministic core of the 7 tools (docs/23 §2), independent of the MCP transport
+/// The deterministic core of the 8 tools (docs/23 §2), independent of the MCP transport
 /// so it can be unit-tested directly against the stub. Two invariants are enforced here,
 /// not merely instructed:
 /// <list type="bullet">
@@ -149,6 +150,46 @@ public sealed class ReviewEngine(IReviewProvider provider, SessionStore store, N
             : new SubmitResult("ready_to_proceed", false,
                 "All blocks accepted — ready to proceed.", null, null);
     }
+
+    /// <summary>
+    /// Local oversight signals (GUARDRAILS.md §4), computed on request from THIS session's state
+    /// only: grounding coverage (G2), forbidden evaluative language (G4), and the
+    /// correction/acceptance ratio. Read-only — no side effects, no network.
+    /// Reuses <see cref="ExplanationRubric.CountVerdictLanguage"/> so "evaluative language" is the
+    /// exact rule the rubric already rejects, not a second, drifting definition of it.
+    /// </summary>
+    public ReviewHealthResult ReviewHealth(string session)
+    {
+        var state = store.Load(session);
+        var total = state.Blocks.Count;
+
+        var ungroundedCount = state.Blocks.Count(b => b.Explanation.Citations.Count == 0);
+
+        var flagged = state.Blocks
+            .Where(b => ExplanationRubric.CountVerdictLanguage(AssertiveText(b.Explanation)) > 0)
+            .Select(b => b.Id)
+            .ToList();
+        var hits = state.Blocks.Sum(b => ExplanationRubric.CountVerdictLanguage(AssertiveText(b.Explanation)));
+
+        var accepted = state.Blocks.Count(b => b.Status == BlockStatus.Accepted);
+        var corrections = state.Blocks.Count(b => b.Status == BlockStatus.CorrectionRequested);
+        var pending = state.Blocks.Count(b => b.Status == BlockStatus.Pending);
+        var decided = accepted + corrections;
+
+        return new ReviewHealthResult(
+            TotalBlocks: total,
+            Accepted: accepted,
+            Corrections: corrections,
+            Pending: pending,
+            UngroundedBlocks: ungroundedCount,
+            UngroundedPct: total == 0 ? 0 : Math.Round(ungroundedCount * 100.0 / total, 1),
+            EvaluativeLanguageHits: hits,
+            FlaggedBlockIds: flagged,
+            CorrectionRatePct: decided == 0 ? null : Math.Round(corrections * 100.0 / decided, 1),
+            Note: "Signals about how this review was built and decided — not a verdict on the code or a measure of the reviewer.");
+    }
+
+    private static string AssertiveText(Explanation e) => $"{e.What}\n{e.Why}\n{e.Link}";
 
     private static double ProgressPct(SessionState state)
     {

@@ -43,21 +43,30 @@ interface is ours.
 ## 4. Oversight signals (local, opt-in)
 
 To "instrument the agent's health" without betraying privacy (no remote telemetry): signals computed
-**locally** and shown **on request**, e.g.
+**locally** and shown **on request** — the 8th tool, `review_health` (spec/mcp-tools.json), reads the
+current session's state file and returns:
 
-- % of explanations **without** a citation (should be 0 → violates G2);
-- occurrences of forbidden evaluative language (violates G4);
-- ratio of **corrections vs acceptances** (a signal of PR quality, not of the human's performance);
-- blocks left **undecided** at `submit_review`.
+- % of explanations **without** a citation (should be 0 → violates G2 if non-zero — a regression signal,
+  since `BlockGuard` already rejects an ungrounded block at construction);
+- occurrences of forbidden evaluative language (violates G4) — reusing
+  `ExplanationRubric.CountVerdictLanguage`, the exact vocabulary the rubric already rejects, so this
+  isn't a second, drifting definition of "evaluative";
+- ratio of **corrections vs acceptances** (a signal of PR quality, not of the human's performance) —
+  `null` when nothing is decided yet, not a misleading 0%;
+- blocks left **undecided** (`pending`).
 
 Guardrail on the metrics themselves: **never** measure "time in the tool", streaks, or reviewer
-performance — that would be surveillance and a dark pattern.
+performance — that would be surveillance and a dark pattern. Enforced by omission: `SessionState` has
+no per-decision timestamps to compute such a thing from, and the tool's own output carries a `note`
+that reframes every number as being about the review's construction, not a verdict on the reviewer. The
+agent is instructed to surface it only when asked (see `agent/reviewcheck.agent.md`), never proactively.
 
 ## 5. How they're verified
 
-The guardrails aren't claims: they're **verified**. For the MVP, the substance guardrails are covered by
+The guardrails aren't claims: they're **verified**. The substance guardrails are covered by
 **unit tests and technical gates** (`G-SCHEMA`, `G-GROUNDING`, `G-NOVERDICT`, `G-ROUNDTRIP`, `G-NOPHONE`,
 `G-E2E`, `G-RECOVERY` — see [`docs/22`](docs/22-mvp-execution-roadmap.md) §0): a block without a
 citation, an emitted verdict, an explanation without code, or an outcome without human decisions all
-**fail the build**. The dedicated eval suite (`evals/`, gate `G-EVAL`) is reintroduced once the MVP is
-complete ([`docs/22`](docs/22-mvp-execution-roadmap.md) §5).
+**fail the build**. The capability eval suite (`eval/ReviewCheck.Evals`, see
+[`eval/README.md`](eval/README.md)) scores these same guarantees as a scorecard over a corpus and gates
+CI — it runs today, not as a future step.
