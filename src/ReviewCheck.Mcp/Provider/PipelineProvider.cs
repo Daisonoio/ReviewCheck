@@ -7,19 +7,19 @@ namespace ReviewCheck.Mcp.Provider;
 
 /// <summary>
 /// The REAL provider (docs/24 §7 + docs/25 §11): local git diff → deterministic pipeline →
-/// narrator seam (<see cref="IBlockNarrator"/>: LLM when configured, facts otherwise).
-/// Replaces <see cref="StubProvider"/> behind the same <see cref="IReviewProvider"/> seam —
-/// the 7 tools, the session store, and the agent do not change. Every block still passes
-/// <see cref="BlockGuard.Ensure"/>: the co-presence + grounding guarantee is identical.
+/// the per-request narrator (<see cref="IBlockNarrator"/>: key LLM / host sampling / facts,
+/// chosen by <see cref="NarratorResolver"/>). Replaces <see cref="StubProvider"/> behind the same
+/// <see cref="IReviewProvider"/> seam — the 7 tools, the session store, and the agent do not
+/// change. Every block still passes <see cref="BlockGuard.Ensure"/>: the co-presence + grounding
+/// guarantee is identical.
 /// </summary>
-public sealed class PipelineProvider(IDiffReader diffReader, AnalysisPipeline pipeline, IBlockNarrator narrator)
-    : IReviewProvider
+public sealed class PipelineProvider(IDiffReader diffReader, AnalysisPipeline pipeline) : IReviewProvider
 {
-    public async Task<AnalyzedReview> AnalyzeAsync(Source source)
+    public async Task<AnalyzedReview> AnalyzeAsync(Source source, IBlockNarrator narrator)
     {
         if (source is not Source.Local local)
             throw new InvalidOperationException(
-                "Mode B (pull request) is not included in the MVP: review the local diff instead.");
+                "Reviewing a pull request is not included in the MVP: review the local diff instead.");
 
         var diff = diffReader.Read(local.Ref);
         var structural = pipeline.Run(diff);

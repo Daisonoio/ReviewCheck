@@ -150,6 +150,5 @@ And the deferred technical extensions:
 - **Agent plan (WHAT/HOW/recovery):** [`docs/21`](21-development-plan.md)
 - **MCP contracts:** [`spec/mcp-tools.json`](../spec/mcp-tools.json)
 - **Enforcement (deterministic/instructed layers):** [`GUARDRAILS.md`](../GUARDRAILS.md)
-- **Full vision / rationale (with the original social gates):** `docs/14`, `docs/18` (in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo)
 
 **Status:** MVP roadmap with technical gates only. Next step: **MVP-1 (walking skeleton, stub-first)**.

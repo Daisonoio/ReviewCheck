@@ -209,6 +209,6 @@ Recommended order (each item is verifiable).
 | Agent: WHAT/HOW + recovery | [21](21-development-plan.md) |
 | Invariants and enforcement | [`GUARDRAILS.md`](../GUARDRAILS.md) |
 
-> **Note (essential set):** the extended rationale — why the product exists, cognitive basis,
-> market, UX, extended architecture, security — lives in the
-> [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo (analysis documents `00`–`11`, `14`–`18`).
+> **Note (essential set):** this repo carries the essential contracts and plans. The extended
+> rationale — why the product exists, cognitive basis, market, UX, extended architecture, security —
+> is not included here.

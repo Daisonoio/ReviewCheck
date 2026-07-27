@@ -25,3 +25,6 @@ Thumbs.db
 # Environment
 .env
 .env.*
+
+# Eval runner output (regenerated each run)
+eval-report.json

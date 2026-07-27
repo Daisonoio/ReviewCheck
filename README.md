@@ -2,7 +2,8 @@
 
 **Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
-![status](https://img.shields.io/badge/status-design%20phase-yellow)
+![status](https://img.shields.io/badge/status-MVP%20built%20·%20local-brightgreen)
+![tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -15,12 +16,11 @@
 > decision. Designed first for developers with ADHD / attention differences; useful for everyone.
 
 > [!IMPORTANT]
-> **Project status: design complete, MVP execution planned — build not yet started.**
-> This repo carries the **essential set** to build a professional MVP — the contracts, the four build
-> plans, and the agent. The machine-readable contracts are in place; the MVP itself is not built yet.
-> The **full product analysis** (problem, cognitive science, market, extended architecture, security,
-> reading guide) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo —
-> nothing was lost.
+> **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
+> the grounded LLM narration layer (MVP-3) are implemented, covered by **134 passing tests**, and
+> verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
+> accept / request-correction → outcome. C# (Roslyn) is the supported language. See
+> [Getting started](#getting-started) to run it.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
 
@@ -73,50 +73,44 @@ local model) and **your** repository access. Your code never leaves your infrast
 
 ## How it works
 
-Two sources, one engine:
-
-- **Mode A — local diff, pre-PR (primary).** Review what an agent just wrote — the uncommitted /
-  staged / local changes — **before** you open a pull request. Reads via `git`; **no token, no
-  network**. The outcome is your understanding plus a **list of corrections to apply**.
-- **Mode B — pull request (secondary).** Review a PR (yours or a teammate's); the outcome can be
-  **posted** to GitHub / Azure DevOps (approve / request-changes, with a `comment_only` fallback when
-  the platform forbids self-approval).
+Review your **local diff** — the uncommitted / staged / local changes an agent (or you) just wrote,
+**before** you open a pull request. Reads via `git`; **no token, no network**. The outcome is your
+understanding plus a **list of corrections to apply** — nothing is ever posted.
 
 ```mermaid
 flowchart LR
-    A["Changes<br/>(local diff · or a PR)"] --> P["ReviewCheck<br/>(local MCP server)"]
+    A["Local diff<br/>(git working · staged · range · commit)"] --> P["ReviewCheck<br/>(local MCP server)"]
     P --> B["Blocks + reading order + seams<br/>code &amp; explanation, grounded"]
     B --> H{"You, block by block"}
     H -->|accept| H
     H -->|request correction| H
-    H --> O["Outcome = sum of your decisions<br/>(corrections list · or posted review)"]
+    H --> O["Outcome = sum of your decisions<br/>(corrections to apply · nothing posted)"]
     P -. "your LLM (BYO key / local)" .-> L["LLM"]
 ```
 
 <details>
-<summary>Example (inside Claude Code, Mode A)</summary>
+<summary>Example (inside Claude Code)</summary>
 
 ```
 You:  review the changes I just wrote, before I open the PR
 
 Agent: [get_review_plan({type:"local"})]   ← reads git diff locally, no token/network
-  Rate limiting for the public API. 6 blocks.
-  Seam to check (from the graph): "allow() can return False → check every caller handles it".
+  Discount pricing rules. 6 blocks across 5 files.
+  Seam to check (from the graph): "Clamp() caps the percentage → check ApplyDiscount uses it".
 
-  ── Block 1/6 ──  rate_limiter/limiter.py (new)
-    class TokenBucket:
-        def allow(self, key): ...
-  WHAT: token-bucket limiter, the core of the change.        (cites limiter.py:1-11)
-  WHY:  decides whether a request passes or is rejected.
-  LINKS: used by the middleware (block 3), params from block 2.
-  ⚠ Uncertainty: could not resolve `_refill` (defined elsewhere).
+  ── Block 2/6 ──  src/TestProject/PricingRules.cs (lines 8–9)
+    public static int Clamp(int percent) =>
+        percent < 0 ? 0 : percent > MaxDiscountPercent ? MaxDiscountPercent : percent;
+  WHAT:  constrains a discount between 0 and MaxDiscountPercent.   (cites PricingRules.cs:8-9)
+  WHY:   keeps every discount within the 50% cap defined in block 1.
+  LINKS: uses 'MaxDiscountPercent' (block 1); used by 'ApplyDiscount' (block 3).
   Accept this block, or request a correction?
 
-You:  what if key is null? request a correction
+You:  what if percent is negative on the way in? request a correction
 Agent: recorded. Next block?
   ...
   → Outcome: CORRECTIONS TO APPLY (nothing posted).
-    • block 1: "handle key=null in allow()"
+    • block 2: "double-check the negative-percent branch of Clamp"
     Fix these, then open the PR.
 ```
 </details>
@@ -133,6 +127,7 @@ guaranteed-vs-instructed model):
 | **Human-in-the-loop** | The AI explains and assists; it **never** judges or approves. The outcome is the sum of your per-block decisions + an explicit confirmation. |
 | **Local by construction** | No backend, no database, no phone-home. Code goes only to *your* LLM. |
 | **No dark patterns** | No streaks, no artificial urgency, no surveillance metrics. You control verbosity and pace. |
+| **Oversight signals, on request** | `review_health` reports grounding coverage, evaluative-language hits, and the correction/acceptance ratio for the session — shown only when asked, never a verdict on the reviewer. |
 
 ## Architecture
 
@@ -147,7 +142,7 @@ flowchart TB
         LA["LLM adapter<br/>(your key / local model)"]
         SS["Session store<br/>local JSON file"]
     end
-    RC -->|"read / (Mode B) post"| GH["GitHub / Azure DevOps"]
+    RC -->|"read local git"| GH["git working tree"]
     RC -->|"targeted context"| LLM["Your LLM"]
 ```
 
@@ -161,50 +156,201 @@ flowchart TB
 
 ## Roadmap
 
-| Phase | Focus |
-|---|---|
-| **0 — Validation gate** | Minimal prototype + study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? Go/no-go before building. |
-| **1 — v1** | Local MCP add-on: Mode A (local diff), C# (Roslyn), BYO-key LLM, the full block-by-block flow; then Mode B (GitHub). |
-| **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. |
-| **3** | Recommended local models, per-repo codebase memory, personalization — all local. |
+| Phase | Focus | Status |
+|---|---|---|
+| **1 — v1 (MVP)** | Local MCP add-on: local-diff review, C# (Roslyn), BYO-key LLM, the full block-by-block flow. | ✅ **Built** — local-diff pipeline (Roslyn), grounded LLM, 7 MCP tools, session persistence, recovery commands. |
+| **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. | ⬜ Planned |
+| **3** | Recommended local models, per-repo codebase memory, personalization — all local. | ⬜ Planned |
+| **Ongoing** | Validation study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? | ⬜ Planned |
 
 ## Repository structure
 
 ```
+src/                  The .NET solution (net8.0):
+  ReviewCheck.Core        Immutable domain types + BlockGuard (co-presence + grounding)
+  ReviewCheck.Platform    Unified-diff parser + LocalDiffReader (git, local process)
+  ReviewCheck.Pipeline    Roslyn analysis P1–P8: graph, blocks, order, citations, seams
+  ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
+  ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
+  ReviewCheck.Mcp         The MCP server: the 8 tools + narrator wiring
+tests/                One xUnit project per src project (134 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
-agent/                The product agent definition (reviewcheck.agent.md)
+agent/ , .claude/     The product agent definition + the Claude Code skill packaging (golden path)
+eval/                 Capability eval suite: scores the guardrails over a corpus, gates CI (eval/README.md)
+AGENTS.md , CLAUDE.md Agent-facing context for developing this repo (build/test/eval, guarantees, conventions)
 GUARDRAILS.md         Guardrails and how each is enforced
 ```
 
-> This repo carries the **essential set** to build the MVP; the [`docs/README.md`](docs/README.md)
-> index maps it out. The **full analysis** (problem, cognitive science, market, extended architecture,
-> security) lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo. The
-> .NET solution (`src/`, `tests/`) is built from these plans starting at MVP-1 ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
+> The build plans that produced `src/` are in
+> [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md).
 
 ## Getting started
 
-There's no runnable code yet. Where to look, depending on what you want:
+The verified host is **Claude Code**. The setup has two halves: the **MCP server** (the deterministic
+engine, a .NET binary) and the **agent command** (the `.md` that turns the tools into a guided `/reviewcheck`
+flow). You install both once, globally, and then use it from **any** repository.
 
-1. **Find your way around** — [`docs/README.md`](docs/README.md), the essential-docs index.
-2. **Understand the why** — the extended analysis (thesis, cognitive science, market, UX, security)
-   lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
-3. **Build the MVP** — the execution roadmap [`docs/22`](docs/22-mvp-execution-roadmap.md) (technical
-   gates only), then the three build plans in order:
-   [MCP stub-first](docs/23-mcp-stub-first-plan.md) → [analysis pipeline](docs/24-pipeline-plan.md) →
-   [grounded LLM](docs/25-llm-plan.md). The agent itself is specced in [`docs/21`](docs/21-development-plan.md).
-4. **The contracts are the source of truth** — [`docs/13-specification-build.md`](docs/13-specification-build.md)
-   and [`spec/`](spec/).
+**Prerequisites:** the [.NET 8 SDK](https://dotnet.microsoft.com/download), `git`, and
+[Claude Code](https://claude.com/claude-code) — all on your `PATH`.
+
+### 1. Clone, build, and test
+
+```bash
+git clone https://github.com/Daisonoio/ReviewCheck.git
+cd ReviewCheck
+dotnet test        # 134 tests should pass
+```
+
+### 2. Publish the MCP server
+
+```bash
+dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o ./bin/mcp
+```
+
+This produces the launcher the host will start: `bin/mcp/ReviewCheck.Mcp.exe` (Windows) or
+`bin/mcp/ReviewCheck.Mcp` (Linux/macOS). Note its **absolute** path — you need it next.
+
+### 3. Register the MCP server — once, globally
+
+Use the Claude Code CLI (not a hand-edited config): `--scope user` registers it **for every repo**, so
+you never re-add it, and the CLI writes the correct `mcpServers` key for you.
+
+```bash
+# Windows (PowerShell)
+claude mcp add reviewcheck --scope user "C:\path\to\ReviewCheck\bin\mcp\ReviewCheck.Mcp.exe"
+
+# macOS / Linux
+claude mcp add reviewcheck --scope user /path/to/ReviewCheck/bin/mcp/ReviewCheck.Mcp
+```
+
+Add a key for richer explanations (optional — see [Analysis modes](#analysis-modes)):
+
+```bash
+claude mcp add reviewcheck --scope user "C:\path\to\...\ReviewCheck.Mcp.exe" \
+  -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-api03-YOUR-REAL-KEY
+```
+
+Verify it connected:
+
+```bash
+claude mcp get reviewcheck     # shows the command, env, and connection status
+```
+
+> [!TIP]
+> **Windows `.mcp.json` gotcha.** If you have a project-level `.mcp.json` that uses the key `"servers"`
+> (some other MCP tools do), Claude Code will log `Missing "mcpServers" — found "servers"`. That's a
+> *different* file and is harmless to ReviewCheck when you register with `--scope user` as above — the
+> user-scope registration is the one that counts.
+
+### 4. Install the agent command — once, globally
+
+The server exposes tools; the **agent** turns them into the guided flow. Copy the agent definition into
+Claude Code's user commands folder so `/reviewcheck` is available everywhere:
+
+```bash
+# Windows (PowerShell)
+Copy-Item ".\.claude\agents\reviewcheck.agent.md" "$env:USERPROFILE\.claude\commands\reviewcheck.agent.md" -Force
+
+# macOS / Linux
+mkdir -p ~/.claude/commands && cp ./.claude/agents/reviewcheck.agent.md ~/.claude/commands/reviewcheck.agent.md
+```
+
+Restart Claude Code so it re-reads commands and launches the server. On startup the server logs one line
+to stderr naming the active narrator (visible with `claude --debug`), e.g.
+`[reviewcheck] narrator: no key — host model interprets the code, 🔴 disclaimer …`.
+
+### 5. Use it
+
+Open Claude Code **in the repository you want to review**, make (or let the agent make) some changes,
+then run:
+
+```
+/reviewcheck.agent
+```
+
+or just ask: *"review my changes with ReviewCheck"*. It reads the local `git diff` (uncommitted changes,
+**including new untracked files**), splits it into ordered blocks, and walks you through them one at a
+time — **accept** or **request a correction** per block — then a final outcome that is the sum of your
+decisions. Nothing is ever posted.
+
+### Try it on the sample repo — TestRepo
+
+Don't have a change handy? **[Daisonoio/TestRepo](https://github.com/Daisonoio/TestRepo)** is a tiny C#
+project built specifically to exercise the flow — the discount-pricing example used throughout this
+README. It ships a script that stages a realistic multi-file change (a new constant, a `Clamp` helper, a
+`DiscountCalculator`, and the call sites) so you get an interesting diff to review in one command:
+
+```bash
+git clone https://github.com/Daisonoio/TestRepo.git
+cd TestRepo
+# generate the change to review (see the repo's README for the script)
+```
+
+Then open Claude Code in `TestRepo` and run `/reviewcheck.agent`. See that repo's
+[`README`](https://github.com/Daisonoio/TestRepo#readme) for the exact steps and the change script.
+
+### Analysis modes
+
+How the explanations are produced depends on whether a valid LLM key is present. Either way a
+**coloured disclaimer** is shown at the top of the review, so the trust level is never ambiguous:
+
+| Mode | When | Narrator | Disclaimer |
+|---|---|---|---|
+| **Grounded** | a valid `REVIEWCHECK_ANTHROPIC_KEY` is set | LLM explanations, bound to line citations and checked by the rubric | 🟡 *LLMs can give incorrect guidance — review the proposed code carefully.* |
+| **Host interpretation** | no key, or the key is rejected | the deterministic structural facts, which **your host model** may interpret in its own words from the cited lines | 🔴 *No LLM API key … interpreted by your host model … may be wrong or partial — review the code carefully.* |
+
+A rejected key behaves exactly like no key. To force the pure deterministic floor (no LLM at all), set
+`REVIEWCHECK_NARRATOR=facts`.
+
+### Configuration (environment variables)
+
+| Variable | Effect |
+|---|---|
+| `REVIEWCHECK_ANTHROPIC_KEY` | Your Anthropic key (or `ANTHROPIC_API_KEY`). **Valid → grounded 🟡; absent/rejected → host interpretation 🔴.** Never logged; code goes only to your account. Get one at [console.anthropic.com](https://console.anthropic.com) (API billing, separate from a Claude subscription). |
+| `REVIEWCHECK_LLM_MODEL` | Model for grounded narration (default `claude-sonnet-5`). |
+| `REVIEWCHECK_REPO` | Absolute path of the repository to review (defaults to the directory Claude Code launched the server in — usually the repo you opened). |
+| `REVIEWCHECK_NARRATOR` | Set to `facts` to force the deterministic floor with no LLM at all (demos, offline, cost control). |
+| `REVIEWCHECK_PROVIDER` | Set to `stub` to use the fixture provider instead of the real pipeline (demos/tests without a repo). |
+
+### Updating after a `git pull`
+
+The two halves live in two places, so a change may need either step — or both:
+
+- **Server changed** (anything under `src/`): re-run **step 2** (`dotnet publish`), then restart Claude Code.
+- **Agent changed** (`.claude/agents/reviewcheck.agent.md`): re-run the **copy in step 4**, then restart.
+
+> [!TIP]
+> On Windows, use a modern terminal (**Windows Terminal**) rather than the legacy console — the legacy
+> one lacks *synchronized output*, which can garble characters while a block is being drawn. It's a
+> display artifact only; the code and citations in the payload are intact.
+
+### Container & reproducible dev environment
+
+Build and run the server as a container — it reads the repo mounted at `/repo` via git:
+
+```bash
+docker build -t reviewcheck .
+docker run -i --rm -v "$PWD:/repo" -e REVIEWCHECK_ANTHROPIC_KEY=sk-ant-... reviewcheck
+```
+
+For development, open the repo in the **[devcontainer](.devcontainer/devcontainer.json)** to get the
+pinned .NET 8 toolchain in a sandbox — identical for every contributor and agent.
+
+> **Design docs:** the contracts are the source of truth —
+> [`docs/13-specification-build.md`](docs/13-specification-build.md) and [`spec/`](spec/); the build
+> plans are [`docs/22`](docs/22-mvp-execution-roadmap.md)–[`25`](docs/25-llm-plan.md); the agent is
+> specced in [`docs/21`](docs/21-development-plan.md).
 
 ## Contributing
 
-This is an early-stage, greenfield project — a good moment to shape it. Ways to help:
+The MVP is built and runnable — a good moment to extend it. Ways to help:
 
-- **Implementation** — follow the MVP roadmap ([`docs/22`](docs/22-mvp-execution-roadmap.md)) starting
-  with the stub-first MCP server ([`docs/23`](docs/23-mcp-stub-first-plan.md)).
+- **Posting to a PR** — a future milestone: read/post a GitHub review from the same block flow.
 - **Language support** — additional language analyzers beyond C# (Roslyn).
-- **Evals** — rebuild the capability suite (grounding, no-verdict, co-presence, human-in-the-loop);
-  deferred until after the MVP (see [`docs/22`](docs/22-mvp-execution-roadmap.md) §5).
+- **Evals** — grow the [capability suite](eval/README.md): the guardrails (grounding, no-verdict,
+  co-presence, degradation, declared uncertainty) are scored over a corpus and gate CI. Add cases to
+  `eval/ReviewCheck.Evals/corpus/`, or new capability checks.
 - **Cognitive-accessibility research** — help design/run the Phase-0 study with neurodivergent
   developers (*"nothing about us without us"*).
 - **Docs** — English translation of the design docs.
@@ -217,8 +363,7 @@ constraints (e.g. adding a backend, or an "auto-approve" capability) can't be ac
 ReviewCheck handles source code — the most sensitive asset a software team has — so security is a
 first-class concern, not an afterthought. The local, no-backend model dissolves whole classes of SaaS
 risk; the residual focus is **local token handling**, **supply-chain integrity** of the OSS package,
-**no phone-home**, and **indirect prompt injection** via untrusted repo content. The full security
-assessment lives in the [`ReviewCheckOLD`](https://github.com/Daisonoio/ReviewCheckOLD) repo.
+**no phone-home**, and **indirect prompt injection** via untrusted repo content.
 
 ## License
 

@@ -1,0 +1,23 @@
+{
+  "name": "ReviewCheck",
+  "//": "Ephemeral, reproducible dev environment: any agent or human gets the same .NET 8 toolchain.",
+  "image": "mcr.microsoft.com/dotnet/sdk:8.0",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "dotnet restore ReviewCheck.sln",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "ReviewCheck.sln"
+      }
+    }
+  },
+  "remoteEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_NOLOGO": "1"
+  }
+}

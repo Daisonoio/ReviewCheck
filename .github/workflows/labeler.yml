@@ -1,0 +1,14 @@
+name: PR triage
+
+# Auto-label pull requests by the area they touch (config in .github/labeler.yml).
+on: [pull_request_target]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v5

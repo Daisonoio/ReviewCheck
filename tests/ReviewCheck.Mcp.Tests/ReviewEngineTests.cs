@@ -1,4 +1,5 @@
 using ReviewCheck.Core;
+using ReviewCheck.Llm;
 using ReviewCheck.Mcp;
 using ReviewCheck.Mcp.Provider;
 using ReviewCheck.Session;
@@ -156,12 +157,12 @@ public sealed class ReviewEngineTests : IDisposable
     }
 
     [Fact]
-    public async Task Submit_ModeB_IsOutOfScope_AndPostsNothing()
+    public async Task Submit_PullRequestSource_IsOutOfScope_AndPostsNothing()
     {
         var engine = NewEngine();
-        // Open a PR-source session directly through the store so submit sees Mode B.
+        // Open a PR-source session directly through the store so submit sees the reserved PR seam.
         var store = new SessionStore(_root);
-        var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local());
+        var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local(), new FactsNarrator());
         var session = store.Create(analyzed, new Source.PullRequest("github", "org/repo", "42"));
         foreach (var b in analyzed.Blocks)
             store.SetStatus(session, b.Id, BlockStatus.Accepted);
@@ -170,6 +171,67 @@ public sealed class ReviewEngineTests : IDisposable
 
         Assert.Equal("comment_only", result.Outcome);
         Assert.False(result.Posted);
+    }
+
+    // ---- review_health: local oversight signals (GUARDRAILS.md §4) ----
+
+    [Fact]
+    public async Task ReviewHealth_CountsDecisions_AndFindsNoGroundingGaps()
+    {
+        var engine = NewEngine();
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+        var ids = plan.Blocks.Select(b => b.Id).ToList();
+
+        engine.AcceptBlock(plan.Session, ids[0]);
+        engine.RequestCorrection(plan.Session, ids[1], "rename the field");
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(ids.Count, health.TotalBlocks);
+        Assert.Equal(1, health.Accepted);
+        Assert.Equal(1, health.Corrections);
+        Assert.Equal(ids.Count - 2, health.Pending);
+        Assert.Equal(50.0, health.CorrectionRatePct); // 1 correction / (1 accepted + 1 correction)
+
+        // BlockGuard guarantees grounding at construction — the stub fixture must show 0 gaps.
+        Assert.Equal(0, health.UngroundedBlocks);
+        Assert.Equal(0.0, health.UngroundedPct);
+    }
+
+    [Fact]
+    public async Task ReviewHealth_NothingDecidedYet_CorrectionRateIsNull()
+    {
+        var engine = NewEngine();
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(0, health.Accepted);
+        Assert.Equal(0, health.Corrections);
+        Assert.Null(health.CorrectionRatePct); // nothing decided — not "0% correction rate"
+    }
+
+    [Fact]
+    public async Task ReviewHealth_FlagsVerdictLanguage_UsingTheSameRubricVocabulary()
+    {
+        var engine = NewEngine();
+        var store = new SessionStore(_root);
+        var plan = await engine.GetReviewPlanAsync(new Source.Local());
+
+        // Simulate a narrator slipping evaluative language past the seam into stored state.
+        var state = store.Load(plan.Session);
+        var tainted = state.Blocks[0] with
+        {
+            Explanation = state.Blocks[0].Explanation with { Why = "This implementation is correct and safe." },
+        };
+        var blocks = state.Blocks.ToList();
+        blocks[0] = tainted;
+        store.Save(state with { Blocks = blocks });
+
+        var health = engine.ReviewHealth(plan.Session);
+
+        Assert.Equal(2, health.EvaluativeLanguageHits); // "correct" + "safe"
+        Assert.Contains(tainted.Id, health.FlaggedBlockIds);
     }
 
     public void Dispose()

@@ -74,7 +74,7 @@
   "tools": [
     {
       "name": "get_review_plan",
-      "description": "Reads a set of changes and returns the plan: blocks, reading order, interaction points (seams), and the FIRST complete block (code + explanation). Opens a local session. SOURCE: Mode A (PRIMARY) = LOCAL pre-PR diff (git, no token/network): review what the agent/you just wrote before opening the PR. Mode B (secondary) = a PR on the platform (via local token).",
+      "description": "Reads the local diff and returns the plan: blocks, reading order, interaction points (seams), and the FIRST complete block (code + explanation). Opens a local session. SOURCE: the LOCAL diff (git, no token/network) — review what the agent/you just wrote. Ref: 'working' (default) | 'staged' | a git range | a commit.",
       "inputSchema": {
         "type": "object",
         "required": [ "source" ],
@@ -147,7 +147,11 @@
               }
             }
           },
-          "first_block": { "$ref": "#/$defs/Block" }
+          "first_block": { "$ref": "#/$defs/Block" },
+          "notice": {
+            "type": "string",
+            "description": "Optional one-line banner on how the explanations were produced for this review: hosting mode (host model via sampling, grounded), or the deterministic structural narrative (no key / no hosting). The agent shows it once at the top."
+          }
         }
       }
     },
@@ -266,7 +270,7 @@
           "confirm": {
             "type": "boolean",
             "default": false,
-            "description": "Mode B only: must be true to post. In Mode A it is ignored (nothing is posted)."
+            "description": "Reserved. For the local review nothing is ever posted, so it is ignored."
           }
         }
       },
@@ -277,16 +281,16 @@
           "outcome": {
             "type": "string",
             "enum": [ "ready_to_proceed", "corrections_to_apply", "approve", "request_changes", "comment_only" ],
-            "description": "Mode A (local): ready_to_proceed | corrections_to_apply. Mode B (PR): approve | request_changes | comment_only (self-review fallback)."
+            "description": "The local review outcome: ready_to_proceed (all accepted) | corrections_to_apply (≥1 correction)."
           },
           "posted": {
             "type": "boolean",
-            "description": "true only in Mode B with confirm=true and after publishing. Always false in Mode A."
+            "description": "Always false for the local review — nothing is ever posted."
           },
           "summary": { "type": "string" },
           "notes": {
             "type": "array",
-            "description": "The requested corrections: in Mode A they are an actionable to-do list; in Mode B they become comments.",
+            "description": "The requested corrections — an actionable to-do list to apply locally.",
             "items": {
               "type": "object",
               "properties": {
@@ -299,6 +303,46 @@
             "type": "array",
             "items": { "type": "string" },
             "description": "Undecided blocks: if non-empty, submit does not proceed."
+          }
+        }
+      }
+    },
+    {
+      "name": "review_health",
+      "description": "Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden evaluative language, and the correction/acceptance ratio. Read-only, no side effects, no network. Deliberately excludes anything that would measure the reviewer (time-in-tool, streaks) — not a verdict on the code or the human.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "session" ],
+        "properties": { "session": { "type": "string" } }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "total_blocks", "accepted", "corrections", "pending", "ungrounded_blocks", "ungrounded_pct", "evaluative_language_hits", "flagged_block_ids", "note" ],
+        "properties": {
+          "total_blocks": { "type": "integer" },
+          "accepted": { "type": "integer" },
+          "corrections": { "type": "integer" },
+          "pending": { "type": "integer" },
+          "ungrounded_blocks": {
+            "type": "integer",
+            "description": "Blocks with zero citations. Should always be 0 — BlockGuard rejects an ungrounded block at construction (G2); a non-zero value signals a regression, not a normal finding."
+          },
+          "ungrounded_pct": { "type": "number" },
+          "evaluative_language_hits": {
+            "type": "integer",
+            "description": "Occurrences of the rubric's forbidden verdict vocabulary (G4) across all explanations in the session."
+          },
+          "flagged_block_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "correction_rate_pct": {
+            "type": [ "number", "null" ],
+            "description": "corrections / (accepted + corrections). Null when nothing is decided yet — not 0%."
+          },
+          "note": {
+            "type": "string",
+            "description": "Always present: reframes the signals as being about the review's construction, never a judgment of the code or the reviewer."
           }
         }
       }

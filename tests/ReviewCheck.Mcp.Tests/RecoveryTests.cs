@@ -133,7 +133,7 @@ public sealed class RecoveryTests : IDisposable
             _engine.AcceptBlock(plan.Session, b.Id);
 
         var preview = _engine.SubmitReview(plan.Session, confirm: false);
-        Assert.False(preview.Posted); // Mode A posts nothing; Mode B would wait for explicit confirm
+        Assert.False(preview.Posted); // local review posts nothing
     }
 
     public void Dispose()

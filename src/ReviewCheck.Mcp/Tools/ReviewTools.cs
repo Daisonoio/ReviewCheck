@@ -5,8 +5,11 @@ using ReviewCheck.Core;
 
 namespace ReviewCheck.Mcp.Tools;
 
+// get_review_plan receives the live McpServer so the engine can detect the host's
+// sampling capability (hosting mode) and pick the narrator for this review.
+
 /// <summary>
-/// The 7 MCP tools (spec/mcp-tools.json). Thin adapters over <see cref="ReviewEngine"/>,
+/// The 8 MCP tools (spec/mcp-tools.json). Thin adapters over <see cref="ReviewEngine"/>,
 /// which carries the logic and the invariants. <c>engine</c> is injected from DI; the
 /// remaining parameters are the tools' inputs. Parameter names are the spec's snake_case.
 /// </summary>
@@ -14,9 +17,9 @@ namespace ReviewCheck.Mcp.Tools;
 public static class ReviewTools
 {
     [McpServerTool(Name = "get_review_plan")]
-    [Description("Reads a set of changes and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Mode A (primary) = local pre-PR diff; Mode B = a PR.")]
-    public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, SourceInput source)
-        => engine.GetReviewPlanAsync(source.ToSource());
+    [Description("Reads the local diff and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Ref: 'working' (default) | 'staged' | a git range | a commit.")]
+    public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, McpServer server, SourceInput source)
+        => engine.GetReviewPlanAsync(source.ToSource(), server);
 
     [McpServerTool(Name = "next_block")]
     [Description("Advances to the next recommended block and returns it COMPLETE (code + explanation together). Print code and explanation together, never separately.")]
@@ -44,9 +47,14 @@ public static class ReviewTools
         => engine.ReviewStatus(session);
 
     [McpServerTool(Name = "submit_review")]
-    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Mode A (local): posts nothing, returns a summary + corrections to apply. Mode B (PR): out of scope in MVP-1.")]
+    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Posts nothing: returns a summary + the corrections to apply locally.")]
     public static SubmitResult SubmitReview(ReviewEngine engine, string session, bool confirm = false)
         => engine.SubmitReview(session, confirm);
+
+    [McpServerTool(Name = "review_health")]
+    [Description("Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden evaluative language, and the correction/acceptance ratio. Read-only, no side effects. Show only when the user asks — never surface unprompted, and never as a judgment of the reviewer.")]
+    public static ReviewHealthResult ReviewHealth(ReviewEngine engine, string session)
+        => engine.ReviewHealth(session);
 }
 
 /// <summary>Input for get_review_plan's <c>source</c> (spec/mcp-tools.json inputSchema).</summary>
