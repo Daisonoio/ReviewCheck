@@ -39,6 +39,7 @@
 - [Contributing](#contributing)
 - [Security & privacy](#security--privacy)
 - [License](#license)
+- [Install into Visual Studio Enterprise](#install-into-visual-studio-enterprise)
 
 ---
 
@@ -337,6 +338,38 @@ mkdir -p ~/.claude/commands && cp ./.claude/agents/reviewcheck.agent.md ~/.claud
 Restart Claude Code so it re-reads commands and launches the server. On startup the server logs one line
 to stderr naming the active narrator (visible with `claude --debug`), e.g.
 `[reviewcheck] narrator: no key — host model interprets the code, 🔴 disclaimer …`.
+
+## Install into Visual Studio Enterprise
+
+### Clone / Add Agent Files
+
+The following files must be in your repository:
+
+```
+.github/
+├── agents/
+│   └── reviewcheck.agent.md    ← Agent definition (already included)
+```
+
+## Configure MCP Server 
+
+### **Visual Studio**
+
+1. **C:\Users\<your-User>\.mcp.json
+
+2 . Add in your .mcp.json file
+  ```json
+       "reviewcheck": {
+      "type": "stdio",
+      "command": "C:\Users\<your-reviewCheck-Directory_Path>\bin\mcp\\ReviewCheck.Mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  ```
+
+**Note: There is currently a known issue in Visual Studio that is under investigation. Further updates will be provided once the root cause has been identified.**
+
+
 
 ### 5. Use it
 
