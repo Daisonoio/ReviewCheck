@@ -37,6 +37,12 @@ public static class McpServerSetup
             builder.Services.AddSingleton<IDiffReader>(_ => new LocalDiffReader(repoRoot));
             builder.Services.AddSingleton<AnalysisPipeline>();
 
+            // Same BYO pattern as the Anthropic key: always constructed, throws a clear
+            // "set REVIEWCHECK_GITHUB_TOKEN" error at USE time if unconfigured — never at startup,
+            // since most reviews are local and never touch this seam.
+            builder.Services.AddSingleton<IPullRequestPlatform>(_ =>
+                new GitHubPullRequestPlatform(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
+
             // Narrator is chosen PER REVIEW (docs/25 §11): the key LLM if configured, else the host
             // model via MCP sampling if the host supports it, else the deterministic facts narrative.
             // The host's sampling capability is known only after the MCP handshake, so the resolver
