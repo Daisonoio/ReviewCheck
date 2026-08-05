@@ -23,6 +23,13 @@ public static class McpServerSetup
 
         // The seam (docs/23 §0): the real pipeline is the default since MVP-2.
         // REVIEWCHECK_PROVIDER=stub keeps the fixture provider (demos, tests without a repo).
+        // Same BYO pattern as the Anthropic key: always constructed, throws a clear
+        // "set REVIEWCHECK_GITHUB_TOKEN" error at USE time if unconfigured — never at startup, since
+        // most reviews are local and never touch this seam. Registered unconditionally (even in stub
+        // mode) because list_pull_requests doesn't go through IReviewProvider at all.
+        builder.Services.AddSingleton<IPullRequestPlatform>(_ =>
+            new GitHubPullRequestPlatform(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
+
         if (string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_PROVIDER"), "stub",
                 StringComparison.OrdinalIgnoreCase))
         {
@@ -36,12 +43,6 @@ public static class McpServerSetup
                            ?? Directory.GetCurrentDirectory();
             builder.Services.AddSingleton<IDiffReader>(_ => new LocalDiffReader(repoRoot));
             builder.Services.AddSingleton<AnalysisPipeline>();
-
-            // Same BYO pattern as the Anthropic key: always constructed, throws a clear
-            // "set REVIEWCHECK_GITHUB_TOKEN" error at USE time if unconfigured — never at startup,
-            // since most reviews are local and never touch this seam.
-            builder.Services.AddSingleton<IPullRequestPlatform>(_ =>
-                new GitHubPullRequestPlatform(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
 
             // Narrator is chosen PER REVIEW (docs/25 §11): the key LLM if configured, else the host
             // model via MCP sampling if the host supports it, else the deterministic facts narrative.

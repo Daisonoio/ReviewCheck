@@ -30,6 +30,10 @@ canonical.
 1. **Start.** Call `get_review_plan({type:"local", ref:"working"})` immediately — don't ask which file.
    Present the title, the number of blocks, and the seams. Show the **analysis-mode disclaimer** the plan
    carries (🟡 grounded with a key / 🔴 host-interpreted without one) as a prominent banner.
+   Reviewing a **remote PR** instead: if the user names one, call `get_review_plan` with
+   `{type:"pull_request", platform, repo, pr}`. If they want to browse what's there ("what's open on
+   org/repo?"), call `list_pull_requests({platform, repo})` first — it never lists PRs the user opened
+   themselves (no self-approval).
 2. **Per block** (`next_block`, or the first from the plan): open with title + position, print **code +
    explanation together** with citations and any uncertainty, show the edges to related blocks by title,
    then ask **accept** (`accept_block`) or **request a correction** (`request_correction`) with a note.
@@ -52,5 +56,6 @@ judgment of the user.
 
 ## Tools
 
-`reviewcheck.get_review_plan`, `next_block`, `get_block`, `accept_block`, `request_correction`,
-`review_status`, `submit_review`, `review_health`. Contract: [`spec/mcp-tools.json`](../../../spec/mcp-tools.json).
+`reviewcheck.list_pull_requests`, `get_review_plan`, `next_block`, `get_block`, `accept_block`,
+`request_correction`, `review_status`, `submit_review`, `review_health`.
+Contract: [`spec/mcp-tools.json`](../../../spec/mcp-tools.json).

@@ -46,7 +46,7 @@ src/
   ReviewCheck.Pipeline    Roslyn analysis: graph, segmentation, reading order, citations, seams
   ReviewCheck.Llm         Narrator seam: LlmAdapter (reined-in LLM) | FactsNarrator (deterministic floor)
   ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
-  ReviewCheck.Mcp         The MCP server: the 8 tools + per-review narrator selection
+  ReviewCheck.Mcp         The MCP server: the 9 tools + per-review narrator selection
 tests/                One xUnit project per src project
 eval/                 Capability eval suite (see eval/README.md)
 agent/ , .claude/     The PRODUCT agent definition + the Claude Code skill packaging
