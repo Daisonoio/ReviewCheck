@@ -16,6 +16,15 @@ namespace ReviewCheck.Mcp.Tools;
 [McpServerToolType]
 public static class ReviewTools
 {
+    [McpServerTool(Name = "list_pull_requests")]
+    [Description("Lists open pull requests for a repo, EXCLUDING ones you opened yourself (you can't approve your own PR — GUARDRAILS G10). Use this to choose which PR to review with get_review_plan. Read-only, no session opened.")]
+    public static async Task<ListPullRequestsResult> ListPullRequests(ReviewEngine engine, string platform, string repo)
+    {
+        var others = await engine.ListOtherPullRequestsAsync(platform, repo);
+        return new ListPullRequestsResult(
+            others.Select(p => new PullRequestListItemView(p.Number, p.Title, p.Author)).ToList());
+    }
+
     [McpServerTool(Name = "get_review_plan")]
     [Description("Reads the local diff and returns the plan (blocks, reading order, seams) and the FIRST complete block (code + explanation together). Opens a local session. Ref: 'working' (default) | 'staged' | a git range | a commit.")]
     public static Task<ReviewPlanResult> GetReviewPlan(ReviewEngine engine, McpServer server, SourceInput source)

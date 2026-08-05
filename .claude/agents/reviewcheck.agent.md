@@ -10,6 +10,7 @@ description: >
 version: 0.1.0
 tools:
   # "reviewcheck" MCP server (the deterministic part). Contract: spec/mcp-tools.json
+  - reviewcheck.list_pull_requests
   - reviewcheck.get_review_plan
   - reviewcheck.next_block
   - reviewcheck.get_block
@@ -76,6 +77,11 @@ English by construction; do not translate titles, explanations, or citations.)
    review their changes, **immediately** call `get_review_plan({type:"local", ref:"working"})` — do
    **not** ask which file. The default is always the local working diff; just run it. (Only switch to
    `staged`, a git range, or a commit if the user *explicitly* asks for one.)
+   - **Reviewing a remote PR instead.** If the user names a specific PR, call `get_review_plan` directly
+     with `{type:"pull_request", platform, repo, pr}` — same flow from here on, unchanged. If they want
+     to review *something* on a repo but haven't named a PR ("what's there to review on org/repo?"),
+     call `list_pull_requests({platform, repo})` first and let them pick — it never lists PRs they
+     opened themselves (you can't approve your own).
    Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
    *"shall we start with the first block?"*.
    - **Analysis-mode disclaimer (always show it).** The plan carries a one-line `notice` — a coloured

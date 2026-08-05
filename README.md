@@ -173,7 +173,7 @@ src/                  The .NET solution (net8.0):
   ReviewCheck.Pipeline    Roslyn analysis P1–P8: graph, blocks, order, citations, seams
   ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
   ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
-  ReviewCheck.Mcp         The MCP server: the 8 tools + narrator wiring
+  ReviewCheck.Mcp         The MCP server: the 9 tools + narrator wiring
 tests/                One xUnit project per src project (134 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json

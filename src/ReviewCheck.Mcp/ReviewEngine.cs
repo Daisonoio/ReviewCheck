@@ -2,12 +2,13 @@ using ModelContextProtocol.Server;
 using ReviewCheck.Core;
 using ReviewCheck.Llm;
 using ReviewCheck.Mcp.Provider;
+using ReviewCheck.Platform;
 using ReviewCheck.Session;
 
 namespace ReviewCheck.Mcp;
 
 /// <summary>
-/// The deterministic core of the 8 tools (docs/23 §2), independent of the MCP transport
+/// The deterministic core of the tools (docs/23 §2), independent of the MCP transport
 /// so it can be unit-tested directly against the stub. Two invariants are enforced here,
 /// not merely instructed:
 /// <list type="bullet">
@@ -16,8 +17,28 @@ namespace ReviewCheck.Mcp;
 /// </list>
 /// The outcome is only ever the sum of the human decisions — there is no verdict path (G-NOVERDICT).
 /// </summary>
-public sealed class ReviewEngine(IReviewProvider provider, SessionStore store, NarratorResolver? narrators = null)
+public sealed class ReviewEngine(
+    IReviewProvider provider, SessionStore store,
+    NarratorResolver? narrators = null, IPullRequestPlatform? pullRequestPlatform = null)
 {
+    /// <summary>
+    /// Open pull requests for <paramref name="repo"/>, EXCLUDING ones the authenticated user opened
+    /// themselves (GUARDRAILS G10 — you can't approve your own PR, so it's not offered as something
+    /// to pick from this list). No session is opened; this is a pure lookup for the "which PR?" step
+    /// before <c>get_review_plan</c>.
+    /// </summary>
+    public async Task<IReadOnlyList<PullRequestSummary>> ListOtherPullRequestsAsync(string platform, string repo)
+    {
+        if (!string.Equals(platform, "github", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                $"Platform '{platform}' is not supported yet — only 'github' lists pull requests today.");
+        if (pullRequestPlatform is null)
+            throw new InvalidOperationException("No pull request platform is configured.");
+
+        var all = await pullRequestPlatform.ListAsync(repo);
+        return all.Where(p => !p.IsSelfReview).ToList();
+    }
+
     /// <summary>
     /// Analyzes the source, opens a session, and returns the plan + the FIRST co-present block.
     /// The narrator (key LLM / host sampling / facts) is chosen here from the host's capabilities,

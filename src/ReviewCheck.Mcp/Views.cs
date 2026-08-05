@@ -129,6 +129,20 @@ public sealed record ReviewHealthResult(
     [property: JsonPropertyName("correction_rate_pct")] double? CorrectionRatePct,
     [property: JsonPropertyName("note")] string Note);
 
+/// <summary>
+/// One reviewable pull request. Never includes ones opened by the authenticated user
+/// (GUARDRAILS G10) — <c>list_pull_requests</c> already filtered them out, so there is no
+/// <c>is_self_review</c> flag to carry here: everything in this list is, by construction, someone
+/// else's PR.
+/// </summary>
+public sealed record PullRequestListItemView(
+    [property: JsonPropertyName("pr")] string Pr,
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("author")] string Author);
+
+public sealed record ListPullRequestsResult(
+    [property: JsonPropertyName("pull_requests")] IReadOnlyList<PullRequestListItemView> PullRequests);
+
 /// <summary>Enum → the exact snake_case tokens the spec uses on the wire.</summary>
 internal static class Wire
 {

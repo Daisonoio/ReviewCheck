@@ -23,6 +23,13 @@ public static class McpServerSetup
 
         // The seam (docs/23 §0): the real pipeline is the default since MVP-2.
         // REVIEWCHECK_PROVIDER=stub keeps the fixture provider (demos, tests without a repo).
+        // Same BYO pattern as the Anthropic key: always constructed, throws a clear
+        // "set REVIEWCHECK_GITHUB_TOKEN" error at USE time if unconfigured — never at startup, since
+        // most reviews are local and never touch this seam. Registered unconditionally (even in stub
+        // mode) because list_pull_requests doesn't go through IReviewProvider at all.
+        builder.Services.AddSingleton<IPullRequestPlatform>(_ =>
+            new GitHubPullRequestPlatform(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }));
+
         if (string.Equals(Environment.GetEnvironmentVariable("REVIEWCHECK_PROVIDER"), "stub",
                 StringComparison.OrdinalIgnoreCase))
         {

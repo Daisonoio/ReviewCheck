@@ -19,6 +19,7 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
     private const string ApiVersion = "2022-11-28";
     private const string DiffAcceptHeader = "application/vnd.github.v3.diff";
     private const string JsonAcceptHeader = "application/vnd.github+json";
+    private const string RawAcceptHeader = "application/vnd.github.raw";
 
     private readonly HttpClient _http;
     private readonly string? _token;
@@ -55,6 +56,36 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
 
     public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, DiffAcceptHeader, ct);
+
+    public async Task<string> GetHeadRefAsync(string repo, string pr, CancellationToken ct = default)
+    {
+        var body = await SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, JsonAcceptHeader, ct);
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement.TryGetProperty("head", out var head) &&
+               head.TryGetProperty("sha", out var sha) && sha.GetString() is { } s
+            ? s
+            : throw new PullRequestPlatformUnavailableException("GitHub PR response has no head.sha.");
+    }
+
+    /// <summary>
+    /// Any failure (missing file, network blip, whatever) degrades to null rather than throwing —
+    /// mirrors <c>LocalDiffReader.LoadNewText</c>'s broad catch: one unreadable file degrades that
+    /// block gracefully (P8), it never fails the whole review.
+    /// </summary>
+    public async Task<string?> GetFileContentAsync(string repo, string @ref, string path, CancellationToken ct = default)
+    {
+        try
+        {
+            var encodedPath = string.Join('/', path.Split('/').Select(Uri.EscapeDataString));
+            return await SendAsync(
+                HttpMethod.Get, $"/repos/{repo}/contents/{encodedPath}?ref={Uri.EscapeDataString(@ref)}",
+                null, RawAcceptHeader, ct);
+        }
+        catch (PullRequestPlatformUnavailableException)
+        {
+            return null;
+        }
+    }
 
     public async Task<string> GetAuthenticatedLoginAsync(CancellationToken ct = default)
     {

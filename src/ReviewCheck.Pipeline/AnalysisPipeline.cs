@@ -20,7 +20,10 @@ public sealed class AnalysisPipeline
     private const int TrivialFileLines = 30;  // "no block = whole file" applies above this size
     private const int MaxUnresolvedListed = 5;
 
-    public PipelineResult Run(LocalDiffResult diff)
+    /// <param name="diff">The parsed diff — same shape regardless of source (local git or a remote PR).</param>
+    /// <param name="label">Prefixes the title (e.g. "Local changes" vs "Pull request #42") — presentation
+    /// only, the pipeline's analysis is identical either way.</param>
+    public PipelineResult Run(LocalDiffResult diff, string label = "Local changes")
     {
         // ---- P1 + P3 + P8: build candidate blocks per file ----
         var candidates = new List<Candidate>();
@@ -73,7 +76,7 @@ public sealed class AnalysisPipeline
 
         var blocks = ordered.Select(c => c.ToStructuralBlock()).ToList();
         return new PipelineResult(
-            Title: $"Local changes ({diff.Ref}): {blocks.Count} block(s) across {diff.Files.Count} file(s)",
+            Title: $"{label} ({diff.Ref}): {blocks.Count} block(s) across {diff.Files.Count} file(s)",
             Blocks: blocks,
             Relations: relations,
             InteractionPoints: seams);
