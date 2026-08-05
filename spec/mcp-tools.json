@@ -73,6 +73,37 @@
   },
   "tools": [
     {
+      "name": "list_pull_requests",
+      "description": "Lists open pull requests for a repo, EXCLUDING ones the authenticated user opened themselves (self-review has no approve/request_changes path — GUARDRAILS G10). Use this to choose which PR to review before calling get_review_plan with source.type='pull_request'. Read-only: no session is opened, nothing is posted.",
+      "inputSchema": {
+        "type": "object",
+        "required": [ "platform", "repo" ],
+        "properties": {
+          "platform": { "type": "string", "enum": [ "github", "azure_devops" ] },
+          "repo": { "type": "string", "description": "e.g. 'owner/name' for GitHub." }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": [ "pull_requests" ],
+        "properties": {
+          "pull_requests": {
+            "type": "array",
+            "description": "Open PRs, self-authored ones already excluded.",
+            "items": {
+              "type": "object",
+              "required": [ "pr", "title", "author" ],
+              "properties": {
+                "pr": { "type": "string" },
+                "title": { "type": "string" },
+                "author": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "get_review_plan",
       "description": "Reads the local diff and returns the plan: blocks, reading order, interaction points (seams), and the FIRST complete block (code + explanation). Opens a local session. SOURCE: the LOCAL diff (git, no token/network) — review what the agent/you just wrote. Ref: 'working' (default) | 'staged' | a git range | a commit.",
       "inputSchema": {

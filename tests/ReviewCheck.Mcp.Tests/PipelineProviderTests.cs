@@ -44,8 +44,53 @@ public sealed class PipelineProviderTests : IDisposable
             texts.Select((t, i) => new DiffLine('+', t, null, i + 1)).ToList();
     }
 
+    /// <summary>In-memory GitHub: no HTTP needed — the IPullRequestPlatform seam does its job.</summary>
+    private sealed class FakePullRequestPlatform : IPullRequestPlatform
+    {
+        private const string GreeterDiff =
+            """
+            diff --git a/src/Greeter.cs b/src/Greeter.cs
+            new file mode 100644
+            index 0000000..1111111
+            --- /dev/null
+            +++ b/src/Greeter.cs
+            @@ -0,0 +1,6 @@
+            +namespace App;
+            +
+            +public class Greeter
+            +{
+            +    public string Hello(string name) => $"Hello {name}";
+            +}
+            """;
+
+        private const string GreeterFullText =
+            "namespace App;\n\npublic class Greeter\n{\n    public string Hello(string name) => $\"Hello {name}\";\n}\n";
+
+        public Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<PullRequestSummary>>(
+                [new PullRequestSummary("1", "Add Greeter", "bob", IsSelfReview: false)]);
+
+        public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
+            Task.FromResult(GreeterDiff);
+
+        public Task<string> GetHeadRefAsync(string repo, string pr, CancellationToken ct = default) =>
+            Task.FromResult("deadbeef");
+
+        public Task<string?> GetFileContentAsync(string repo, string @ref, string path, CancellationToken ct = default) =>
+            Task.FromResult<string?>(GreeterFullText);
+
+        public Task<string> GetAuthenticatedLoginAsync(CancellationToken ct = default) =>
+            Task.FromResult("alice");
+
+        public Task SubmitReviewAsync(
+            string repo, string pr, PullRequestReviewEvent reviewEvent,
+            IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default) =>
+            throw new InvalidOperationException("Not exercised by PipelineProviderTests — that's ReviewEngine's job.");
+    }
+
     // FactsNarrator keeps these tests deterministic; LlmAdapter is exercised in ReviewCheck.Llm.Tests.
-    private PipelineProvider NewProvider() => new(new FakeDiffReader(), new AnalysisPipeline());
+    private PipelineProvider NewProvider() =>
+        new(new FakeDiffReader(), new AnalysisPipeline(), new FakePullRequestPlatform());
     private static readonly IBlockNarrator Facts = new FactsNarrator();
 
     [Fact]
@@ -101,10 +146,34 @@ public sealed class PipelineProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task PullRequestSource_IsRejected_NoNetworkPath()
+    public async Task PullRequestSource_Github_ProducesRealBlocks_SameAsLocal()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            NewProvider().AnalyzeAsync(new Source.PullRequest("github", "org/repo", "1"), Facts));
+        var review = await NewProvider().AnalyzeAsync(new Source.PullRequest("github", "org/repo", "1"), Facts);
+
+        Assert.NotEmpty(review.Blocks);
+        Assert.All(review.Blocks, b => Assert.True(BlockGuard.IsValid(b)));
+        Assert.Contains(review.Blocks, b => b.Title.Contains("Greeter.Hello"));
+    }
+
+    [Fact]
+    public async Task PullRequestSource_TitleNamesThePr_NotLocalChanges()
+    {
+        var engine = new ReviewEngine(NewProvider(), new SessionStore(_root));
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "42"));
+
+        Assert.Contains("Pull request #42", plan.Title);
+        Assert.DoesNotContain("Local changes", plan.Title);
+    }
+
+    [Fact]
+    public async Task PullRequestSource_UnsupportedPlatform_ThrowsClearly()
+    {
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NewProvider().AnalyzeAsync(new Source.PullRequest("azure_devops", "org/repo", "1"), Facts));
+
+        Assert.Contains("azure_devops", ex.Message);
+        Assert.Contains("github", ex.Message);
     }
 
     public void Dispose()

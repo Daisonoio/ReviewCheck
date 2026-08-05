@@ -2,6 +2,7 @@ using ReviewCheck.Core;
 using ReviewCheck.Llm;
 using ReviewCheck.Mcp;
 using ReviewCheck.Mcp.Provider;
+using ReviewCheck.Platform;
 using ReviewCheck.Session;
 
 namespace ReviewCheck.Mcp.Tests;
@@ -238,5 +239,61 @@ public sealed class ReviewEngineTests : IDisposable
     {
         if (Directory.Exists(_root))
             Directory.Delete(_root, recursive: true);
+    }
+
+    // ---- list_pull_requests: excludes self-authored PRs (GUARDRAILS G10) ----
+
+    private sealed class FakePullRequestPlatform(IReadOnlyList<PullRequestSummary> summaries) : IPullRequestPlatform
+    {
+        public Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default) =>
+            Task.FromResult(summaries);
+
+        public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
+            throw new NotSupportedException("Not exercised here.");
+        public Task<string> GetHeadRefAsync(string repo, string pr, CancellationToken ct = default) =>
+            throw new NotSupportedException("Not exercised here.");
+        public Task<string?> GetFileContentAsync(string repo, string @ref, string path, CancellationToken ct = default) =>
+            throw new NotSupportedException("Not exercised here.");
+        public Task<string> GetAuthenticatedLoginAsync(CancellationToken ct = default) =>
+            throw new NotSupportedException("Not exercised here.");
+        public Task SubmitReviewAsync(string repo, string pr, PullRequestReviewEvent reviewEvent,
+            IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default) =>
+            throw new NotSupportedException("Not exercised here.");
+    }
+
+    [Fact]
+    public async Task ListOtherPullRequests_ExcludesSelfAuthored()
+    {
+        var platform = new FakePullRequestPlatform([
+            new PullRequestSummary("1", "Someone else's PR", "bob", IsSelfReview: false),
+            new PullRequestSummary("2", "My own PR", "alice", IsSelfReview: true),
+        ]);
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root), pullRequestPlatform: platform);
+
+        var others = await engine.ListOtherPullRequestsAsync("github", "org/repo");
+
+        Assert.Single(others);
+        Assert.Equal("1", others[0].Number);
+    }
+
+    [Fact]
+    public async Task ListOtherPullRequests_UnsupportedPlatform_ThrowsClearly()
+    {
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root),
+            pullRequestPlatform: new FakePullRequestPlatform([]));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => engine.ListOtherPullRequestsAsync("azure_devops", "org/repo"));
+
+        Assert.Contains("azure_devops", ex.Message);
+    }
+
+    [Fact]
+    public async Task ListOtherPullRequests_NoPlatformConfigured_ThrowsClearly()
+    {
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => engine.ListOtherPullRequestsAsync("github", "org/repo"));
     }
 }
