@@ -271,9 +271,9 @@ claude mcp add reviewcheck --scope user /path/to/ReviewCheck/scripts/reviewcheck
 
 The wrapper ([`scripts/reviewcheck-docker.sh`](scripts/reviewcheck-docker.sh) /
 [`.cmd`](scripts/reviewcheck-docker.cmd)) forwards `REVIEWCHECK_ANTHROPIC_KEY`, `ANTHROPIC_API_KEY`,
-`REVIEWCHECK_LLM_MODEL`, and `REVIEWCHECK_NARRATOR` straight through if you set them — same effect as
-the `-e` flag in Option A. Set them on your machine (or export them before launching Claude Code), not
-on the `claude mcp add` command itself.
+`REVIEWCHECK_LLM_MODEL`, `REVIEWCHECK_NARRATOR`, and `GITHUB_TOKEN` straight through if you set them —
+same effect as the `-e` flag in Option A. Set them on your machine (or export them before launching
+Claude Code), not on the `claude mcp add` command itself.
 
 #### Verify either option connected
 
@@ -423,6 +423,7 @@ A rejected key behaves exactly like no key. To force the pure deterministic floo
 | `REVIEWCHECK_REPO` | Absolute path of the repository to review (defaults to the directory Claude Code launched the server in — usually the repo you opened). |
 | `REVIEWCHECK_NARRATOR` | Set to `facts` to force the deterministic floor with no LLM at all (demos, offline, cost control). |
 | `REVIEWCHECK_PROVIDER` | Set to `stub` to use the fixture provider instead of the real pipeline (demos/tests without a repo). |
+| `GITHUB_TOKEN` | Your GitHub token (fine-grained PAT, "Pull requests: Read and write" on the target repo). Required only to review a remote PR (`source.type: "pull_request"`) or call `list_pull_requests` — never for a local diff. Never logged. |
 
 ### Updating after a `git pull`
 
