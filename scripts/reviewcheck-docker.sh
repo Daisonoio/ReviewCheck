@@ -23,4 +23,5 @@ exec docker run -i --rm \
   -e ANTHROPIC_API_KEY \
   -e REVIEWCHECK_LLM_MODEL \
   -e REVIEWCHECK_NARRATOR \
+  -e GITHUB_TOKEN \
   reviewcheck

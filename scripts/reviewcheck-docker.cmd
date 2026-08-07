@@ -14,4 +14,4 @@ REM again whenever src/ changes.
 REM
 REM Register this script itself -- not `docker run` directly -- with Claude Code:
 REM   claude mcp add reviewcheck --scope user cmd -- /c "C:\path\to\ReviewCheck\scripts\reviewcheck-docker.cmd"
-docker run -i --rm -v "%CD%:/repo" -e REVIEWCHECK_ANTHROPIC_KEY -e ANTHROPIC_API_KEY -e REVIEWCHECK_LLM_MODEL -e REVIEWCHECK_NARRATOR reviewcheck
+docker run -i --rm -v "%CD%:/repo" -e REVIEWCHECK_ANTHROPIC_KEY -e ANTHROPIC_API_KEY -e REVIEWCHECK_LLM_MODEL -e REVIEWCHECK_NARRATOR -e GITHUB_TOKEN reviewcheck
