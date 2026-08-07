@@ -189,6 +189,28 @@ public sealed class GitHubPullRequestPlatformTests
         Assert.Contains("\"event\":\"COMMENT\"", handler.LastRequestBody);
     }
 
+    [Fact]
+    public async Task SubmitReviewAsync_CarriesTheGivenBody()
+    {
+        var handler = new StubHandler(HttpStatusCode.OK, "{}");
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        await platform.SubmitReviewAsync("owner/repo", "42", PullRequestReviewEvent.Comment, [], body: "self-review, comment-only");
+
+        Assert.Contains("\"body\":\"self-review, comment-only\"", handler.LastRequestBody);
+    }
+
+    [Fact]
+    public async Task SubmitReviewAsync_NoBodyGiven_SendsEmptyString_NotNull()
+    {
+        var handler = new StubHandler(HttpStatusCode.OK, "{}");
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        await platform.SubmitReviewAsync("owner/repo", "42", PullRequestReviewEvent.Approve, []);
+
+        Assert.Contains("\"body\":\"\"", handler.LastRequestBody);
+    }
+
     // ---- error handling: never leak the token, distinguish rejection from unreachable ----
 
     [Fact]

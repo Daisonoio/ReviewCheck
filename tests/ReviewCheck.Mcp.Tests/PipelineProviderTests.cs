@@ -87,7 +87,7 @@ public sealed class PipelineProviderTests : IDisposable
 
         public Task SubmitReviewAsync(
             string repo, string pr, PullRequestReviewEvent reviewEvent,
-            IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default) =>
+            IReadOnlyList<PullRequestComment> comments, string? body = null, CancellationToken ct = default) =>
             throw new InvalidOperationException("Not exercised by PipelineProviderTests — that's ReviewEngine's job.");
     }
 
@@ -131,7 +131,7 @@ public sealed class PipelineProviderTests : IDisposable
         foreach (var b in plan.Blocks)
             engine.AcceptBlock(plan.Session, b.Id);
 
-        var result = engine.SubmitReview(plan.Session, confirm: false);
+        var result = await engine.SubmitReviewAsync(plan.Session, confirm: false);
         Assert.Equal("ready_to_proceed", result.Outcome);
         Assert.False(result.Posted);
     }

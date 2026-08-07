@@ -112,11 +112,12 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
 
     public Task SubmitReviewAsync(
         string repo, string pr, PullRequestReviewEvent reviewEvent,
-        IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default)
+        IReadOnlyList<PullRequestComment> comments, string? body = null, CancellationToken ct = default)
     {
         var payload = JsonSerializer.Serialize(new
         {
             @event = ToGitHubEvent(reviewEvent),
+            body = body ?? "",
             comments = comments.Select(c => new { path = c.Path, line = ParseLine(c.Line), body = c.Body }),
         });
         return SendAsync(HttpMethod.Post, $"/repos/{repo}/pulls/{pr}/reviews", payload, JsonAcceptHeader, ct);

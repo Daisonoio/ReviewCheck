@@ -49,10 +49,13 @@ public interface IPullRequestPlatform
     /// <see cref="PullRequestReviewEvent.Approve"/> or <see cref="PullRequestReviewEvent.RequestChanges"/>
     /// for a self-review — that is the CALLER's responsibility (GUARDRAILS G10); this method does not
     /// re-derive it, so it cannot silently "fix" a caller that gets it wrong.
+    /// <paramref name="body"/> is the review's top-level summary — GitHub requires one when the event
+    /// is <see cref="PullRequestReviewEvent.Comment"/> or <see cref="PullRequestReviewEvent.RequestChanges"/>
+    /// and there are no per-line <paramref name="comments"/> to carry that text instead.
     /// </summary>
     Task SubmitReviewAsync(
         string repo, string pr, PullRequestReviewEvent reviewEvent,
-        IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default);
+        IReadOnlyList<PullRequestComment> comments, string? body = null, CancellationToken ct = default);
 }
 
 /// <summary>

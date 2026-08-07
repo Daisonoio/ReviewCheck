@@ -132,7 +132,7 @@ public sealed class RecoveryTests : IDisposable
         foreach (var b in plan.Blocks)
             _engine.AcceptBlock(plan.Session, b.Id);
 
-        var preview = _engine.SubmitReview(plan.Session, confirm: false);
+        var preview = await _engine.SubmitReviewAsync(plan.Session, confirm: false);
         Assert.False(preview.Posted); // local review posts nothing
     }
 

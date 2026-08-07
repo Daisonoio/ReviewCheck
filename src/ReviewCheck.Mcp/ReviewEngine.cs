@@ -158,8 +158,14 @@ public sealed class ReviewEngine(
     /// Closes the review. The outcome is the sum of the human decisions; nothing is ever a verdict.
     /// Deterministic gate G6: with any undecided block it does not close (returns undecided_blocks).
     /// Local review: nothing is ever posted — no token, no network.
+    /// Pull request: posts ONE batched review via <see cref="IPullRequestPlatform.SubmitReviewAsync"/>,
+    /// and only when <paramref name="confirm"/> is true (G6/G8) — without it, this returns a preview of
+    /// what WOULD be posted and makes no network call. GUARDRAILS G10: when the session's
+    /// <c>is_self_review</c> is true (or unresolved — fails closed), the review event is forced to
+    /// <see cref="PullRequestReviewEvent.Comment"/>; <c>Approve</c>/<c>RequestChanges</c> are never even
+    /// constructed for a self-review, let alone sent.
     /// </summary>
-    public SubmitResult SubmitReview(string session, bool confirm)
+    public async Task<SubmitResult> SubmitReviewAsync(string session, bool confirm)
     {
         var state = store.Load(session);
 
@@ -168,10 +174,10 @@ public sealed class ReviewEngine(
             .Select(b => b.Id)
             .ToList();
 
-        var notes = state.Blocks
+        var correctionBlocks = state.Blocks
             .Where(b => b.Status == BlockStatus.CorrectionRequested)
-            .Select(b => new NoteView(b.Id, b.Note ?? string.Empty))
             .ToList();
+        var notes = correctionBlocks.Select(b => new NoteView(b.Id, b.Note ?? string.Empty)).ToList();
         var noteList = notes.Count > 0 ? notes : null;
 
         // G6: incomplete review never closes. "ready_to_proceed" is emitted only when every block is accepted.
@@ -183,14 +189,8 @@ public sealed class ReviewEngine(
                 Notes: noteList,
                 UndecidedBlocks: undecided);
 
-        // Reviewing a pull request is not part of the MVP: no token, no network, nothing posted.
         if (state.Source.Type == "pull_request")
-            return new SubmitResult(
-                Outcome: "comment_only",
-                Posted: false,
-                Summary: "Reviewing a pull request is not included in this MVP. Nothing was posted.",
-                Notes: noteList,
-                UndecidedBlocks: null);
+            return await SubmitPullRequestReviewAsync(state, correctionBlocks, noteList, confirm);
 
         // Local review: present the outcome; post nothing (the self-approval problem does not exist).
         return notes.Count > 0
@@ -198,6 +198,55 @@ public sealed class ReviewEngine(
                 $"{notes.Count} correction(s) to apply; the rest is accepted.", noteList, null)
             : new SubmitResult("ready_to_proceed", false,
                 "All blocks accepted — ready to proceed.", null, null);
+    }
+
+    private async Task<SubmitResult> SubmitPullRequestReviewAsync(
+        SessionState state, IReadOnlyList<BlockState> correctionBlocks, IReadOnlyList<NoteView>? noteList, bool confirm)
+    {
+        // Fail-closed (G10): a missing flag (e.g. a session opened before this field existed) is
+        // treated the same as "yes, this is a self-review" — never as license to approve.
+        var isSelfReview = state.Source.IsSelfReview ?? true;
+        var hasCorrections = correctionBlocks.Count > 0;
+
+        var (outcome, reviewEvent) = (isSelfReview, hasCorrections) switch
+        {
+            (true, _) => ("comment_only", PullRequestReviewEvent.Comment),
+            (false, true) => ("request_changes", PullRequestReviewEvent.RequestChanges),
+            (false, false) => ("approve", PullRequestReviewEvent.Approve),
+        };
+
+        if (!confirm)
+            return new SubmitResult(outcome, false,
+                $"Preview only — nothing posted yet. Call again with confirm:true to post '{outcome}' to the pull request.",
+                noteList, null);
+
+        if (pullRequestPlatform is null)
+            return new SubmitResult(outcome, false,
+                "No pull request platform is configured — nothing was posted.", noteList, null);
+
+        var pr = (Source.PullRequest)state.Source.ToSource();
+        var comments = correctionBlocks
+            .Select(b => new PullRequestComment(
+                b.Explanation.Citations[0].File, b.Explanation.Citations[0].Lines, b.Note ?? string.Empty))
+            .ToList();
+        var body = isSelfReview
+            ? "Reviewed with ReviewCheck. This is the reviewer's own pull request, so it closes as comment-only — never an approval or a request for changes (GUARDRAILS G10)."
+            : hasCorrections
+                ? $"Reviewed with ReviewCheck. {correctionBlocks.Count} correction(s) requested — see inline comments."
+                : "Reviewed with ReviewCheck. All blocks accepted.";
+
+        try
+        {
+            await pullRequestPlatform.SubmitReviewAsync(pr.Repo, pr.Pr, reviewEvent, comments, body);
+        }
+        catch (PullRequestPlatformUnavailableException e)
+        {
+            return new SubmitResult(outcome, false,
+                $"Could not post the review to the pull request: {e.Message}", noteList, null);
+        }
+
+        return new SubmitResult(outcome, true,
+            $"Posted '{outcome}' to the pull request.", noteList, null);
     }
 
     /// <summary>
