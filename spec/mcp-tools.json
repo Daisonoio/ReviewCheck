@@ -182,6 +182,10 @@
           "notice": {
             "type": "string",
             "description": "Optional one-line banner on how the explanations were produced for this review: hosting mode (host model via sampling, grounded), or the deterministic structural narrative (no key / no hosting). The agent shows it once at the top."
+          },
+          "is_self_review": {
+            "type": [ "boolean", "null" ],
+            "description": "PR sources only: true if the authenticated identity opened this PR themselves. When true, the agent must tell the user UP FRONT that submit_review can only reach comment_only, never approve/request_changes (GUARDRAILS G10) — not as a surprise at close time. Null for a local review."
           }
         }
       }

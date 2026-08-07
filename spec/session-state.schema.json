@@ -34,6 +34,10 @@
         "pr": {
           "type": [ "integer", "string" ],
           "description": "type=pull_request only."
+        },
+        "is_self_review": {
+          "type": [ "boolean", "null" ],
+          "description": "type=pull_request only: true if the authenticated token identity opened this PR themselves. Computed once when the review is opened (GUARDRAILS G10) and used by submit_review to decide whether approve/request_changes are offered at all. null for type=local, or if it could not be determined (treated as self-review, fail-closed)."
         }
       }
     },

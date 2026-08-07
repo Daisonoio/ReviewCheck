@@ -78,7 +78,8 @@ public sealed record ReviewPlanResult(
     [property: JsonPropertyName("blocks")] IReadOnlyList<BlockSummaryView> Blocks,
     [property: JsonPropertyName("interaction_points")] IReadOnlyList<InteractionPointView> InteractionPoints,
     [property: JsonPropertyName("first_block")] BlockView FirstBlock,
-    [property: JsonPropertyName("notice")] string? Notice = null);
+    [property: JsonPropertyName("notice")] string? Notice = null,
+    [property: JsonPropertyName("is_self_review")] bool? IsSelfReview = null);
 
 public sealed record NextBlockResult(
     [property: JsonPropertyName("block")] BlockView Block,

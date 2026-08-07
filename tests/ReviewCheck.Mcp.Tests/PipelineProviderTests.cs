@@ -70,6 +70,9 @@ public sealed class PipelineProviderTests : IDisposable
             Task.FromResult<IReadOnlyList<PullRequestSummary>>(
                 [new PullRequestSummary("1", "Add Greeter", "bob", IsSelfReview: false)]);
 
+        public Task<PullRequestSummary> GetSummaryAsync(string repo, string pr, CancellationToken ct = default) =>
+            Task.FromResult(new PullRequestSummary(pr, "Add Greeter", "bob", IsSelfReview: false));
+
         public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
             Task.FromResult(GreeterDiff);
 

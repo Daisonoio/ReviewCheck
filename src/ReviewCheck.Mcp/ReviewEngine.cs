@@ -52,7 +52,8 @@ public sealed class ReviewEngine(
         if (analyzed.Blocks.Count == 0)
             throw new InvalidOperationException("The analysis produced no blocks.");
 
-        var session = store.Create(analyzed, source);
+        var isSelfReview = await ResolveIsSelfReviewAsync(source);
+        var session = store.Create(analyzed, source, isSelfReview);
 
         var summaries = analyzed.Blocks
             .Select((b, i) => new BlockSummaryView(b.Id, i, b.Title, Wire.Intent(b.Intent), b.EstimatedMinutes))
@@ -78,7 +79,34 @@ public sealed class ReviewEngine(
                 }
             };
 
-        return new ReviewPlanResult(session, analyzed.Title, analyzed.EstimatedMinutes, summaries, seams, BlockView.From(first), notice);
+        return new ReviewPlanResult(session, analyzed.Title, analyzed.EstimatedMinutes, summaries, seams, BlockView.From(first), notice, isSelfReview);
+    }
+
+    /// <summary>
+    /// GUARDRAILS G10: computed ONCE, here, whether opening a PR review or picking one from
+    /// <see cref="ListOtherPullRequestsAsync"/> — this is the path that catches the case where the
+    /// caller opens a PR directly by number, bypassing the list (where it's already excluded).
+    /// Fail-CLOSED: if it can't be determined (platform unconfigured, network hiccup), the result is
+    /// <c>true</c> — treated as a self-review — because the failure mode of wrongly WITHHOLDING
+    /// approve/request_changes is a false "you can't approve this", not a missed self-approval.
+    /// </summary>
+    private async Task<bool?> ResolveIsSelfReviewAsync(Source source)
+    {
+        if (source is not Source.PullRequest { Platform: "github" } pr)
+            return null; // not a PR at all — the question doesn't apply, distinct from "couldn't tell"
+
+        if (pullRequestPlatform is null)
+            return true; // a PR, but nothing to ask — fail closed, same as a thrown exception below
+
+        try
+        {
+            var summary = await pullRequestPlatform.GetSummaryAsync(pr.Repo, pr.Pr);
+            return summary.IsSelfReview;
+        }
+        catch (PullRequestPlatformUnavailableException)
+        {
+            return true;
+        }
     }
 
     /// <summary>Advances the pointer and returns the next block co-present, with position and progress.</summary>

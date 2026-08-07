@@ -31,10 +31,21 @@ public sealed record SourceState(
     string? Repo = null,
     string? Pr = null)
 {
-    public static SourceState FromSource(Source source) => source switch
+    /// <summary>
+    /// type=pull_request only: whether the authenticated token identity opened this PR themselves
+    /// (GUARDRAILS G10). Computed ONCE when the review opens and carried for the session's whole
+    /// lifetime, so submit_review doesn't need to re-derive it (or re-hit the network) at close time.
+    /// Null for a local review, or when it couldn't be determined at open time.
+    /// </summary>
+    public bool? IsSelfReview { get; init; }
+
+    public static SourceState FromSource(Source source, bool? isSelfReview = null) => source switch
     {
         Source.Local local => new SourceState("local", local.Ref),
-        Source.PullRequest pr => new SourceState("pull_request", null, pr.Platform, pr.Repo, pr.Pr),
+        Source.PullRequest pr => new SourceState("pull_request", null, pr.Platform, pr.Repo, pr.Pr)
+        {
+            IsSelfReview = isSelfReview,
+        },
         _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Unknown source kind."),
     };
 

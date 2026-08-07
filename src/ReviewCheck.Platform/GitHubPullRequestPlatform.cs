@@ -54,6 +54,20 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
         return result;
     }
 
+    public async Task<PullRequestSummary> GetSummaryAsync(string repo, string pr, CancellationToken ct = default)
+    {
+        var login = await GetAuthenticatedLoginAsync(ct);
+        var body = await SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, JsonAcceptHeader, ct);
+
+        using var doc = JsonDocument.Parse(body);
+        var author = doc.RootElement.GetProperty("user").GetProperty("login").GetString() ?? "";
+        return new PullRequestSummary(
+            Number: doc.RootElement.GetProperty("number").GetInt32().ToString(),
+            Title: doc.RootElement.GetProperty("title").GetString() ?? "",
+            Author: author,
+            IsSelfReview: string.Equals(author, login, StringComparison.OrdinalIgnoreCase));
+    }
+
     public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, DiffAcceptHeader, ct);
 

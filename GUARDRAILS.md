@@ -22,6 +22,7 @@ confirmation**.
 | G5 | **Human decision per block** | The outcome is computed only from the `status` set by `accept_block`/`request_correction` | **Deterministic** |
 | G6 | **Explicit confirmation before posting** | `submit_review` posts only with `confirm=true`; without it, it's preview only; it fails if any block is undecided | **Deterministic** |
 | G7 | **Local / no phone-home** | No network beyond the platform (user token) and the configured LLM; network test in CI | **Deterministic** |
+| G10 | **No self-approval on a PR** | `is_self_review` is computed **once**, when the review opens — comparing the authenticated token identity to the PR's author (`IPullRequestPlatform.GetSummaryAsync`/`ListAsync`) — and carried in session state for the review's whole lifetime. `list_pull_requests` excludes self-authored PRs outright; `get_review_plan` surfaces the flag so the agent discloses it **before the first block**, not as a surprise at close time. Unresolvable (no platform, network failure) fails **closed**: treated as self-review. | **Deterministic** (detection is unconditional code, not an instruction) — the *outcome gate* on `submit_review` (restricting `approve`/`request_changes` to `comment_only` when true) lands with the PR-posting logic (G8/G9, tracked separately) |
 
 ## 3. Enforcement model (intellectual honesty)
 

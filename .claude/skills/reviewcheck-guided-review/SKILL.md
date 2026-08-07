@@ -33,7 +33,8 @@ canonical.
    Reviewing a **remote PR** instead: if the user names one, call `get_review_plan` with
    `{type:"pull_request", platform, repo, pr}`. If they want to browse what's there ("what's open on
    org/repo?"), call `list_pull_requests({platform, repo})` first — it never lists PRs the user opened
-   themselves (no self-approval).
+   themselves (no self-approval). If the plan's `is_self_review` is `true`, say so **before the first
+   block** — one line: this can only close as comments, never an approval.
 2. **Per block** (`next_block`, or the first from the plan): open with title + position, print **code +
    explanation together** with citations and any uncertainty, show the edges to related blocks by title,
    then ask **accept** (`accept_block`) or **request a correction** (`request_correction`) with a note.

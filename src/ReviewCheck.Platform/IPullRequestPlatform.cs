@@ -16,6 +16,13 @@ public interface IPullRequestPlatform
     /// <summary>Open pull requests for <paramref name="repo"/> ("owner/name"), each flagged for self-review.</summary>
     Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default);
 
+    /// <summary>
+    /// One pull request's summary, flagged for self-review — same shape <see cref="ListAsync"/> already
+    /// computes per item, for the case where the caller opens a PR directly by number (GUARDRAILS G10)
+    /// instead of picking it from the list.
+    /// </summary>
+    Task<PullRequestSummary> GetSummaryAsync(string repo, string pr, CancellationToken ct = default);
+
     /// <summary>The pull request's diff as unified-diff text — parsed downstream by <see cref="UnifiedDiffParser"/>, unchanged.</summary>
     Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default);
 
