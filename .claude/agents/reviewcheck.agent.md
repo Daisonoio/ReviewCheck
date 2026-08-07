@@ -82,6 +82,10 @@ English by construction; do not translate titles, explanations, or citations.)
      to review *something* on a repo but haven't named a PR ("what's there to review on org/repo?"),
      call `list_pull_requests({platform, repo})` first and let them pick — it never lists PRs they
      opened themselves (you can't approve your own).
+   - **Self-review, said up front.** The plan carries `is_self_review`. If it's `true`, tell the user
+     **before the first block** — one line, not buried: *"Heads up: this is your own PR, so I can only
+     leave comments at the end — GitHub (and this tool) won't let you approve your own work."* Then
+     proceed with the review normally; only the closing outcome is constrained, not the walkthrough.
    Then present the title, the number of blocks, and the **seams**, and propose the **first tiny step**:
    *"shall we start with the first block?"*.
    - **Analysis-mode disclaimer (always show it).** The plan carries a one-line `notice` — a coloured

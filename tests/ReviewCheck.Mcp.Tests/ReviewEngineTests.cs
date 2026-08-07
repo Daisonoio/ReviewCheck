@@ -243,10 +243,20 @@ public sealed class ReviewEngineTests : IDisposable
 
     // ---- list_pull_requests: excludes self-authored PRs (GUARDRAILS G10) ----
 
-    private sealed class FakePullRequestPlatform(IReadOnlyList<PullRequestSummary> summaries) : IPullRequestPlatform
+    private sealed class FakePullRequestPlatform(IReadOnlyList<PullRequestSummary> summaries, bool throwOnSummary = false)
+        : IPullRequestPlatform
     {
         public Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default) =>
             Task.FromResult(summaries);
+
+        public Task<PullRequestSummary> GetSummaryAsync(string repo, string pr, CancellationToken ct = default)
+        {
+            if (throwOnSummary)
+                throw new PullRequestPlatformUnavailableException("scripted failure");
+            var match = summaries.SingleOrDefault(s => s.Number == pr)
+                        ?? throw new PullRequestPlatformUnavailableException($"no fixture PR '{pr}'");
+            return Task.FromResult(match);
+        }
 
         public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
             throw new NotSupportedException("Not exercised here.");
@@ -295,5 +305,74 @@ public sealed class ReviewEngineTests : IDisposable
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => engine.ListOtherPullRequestsAsync("github", "org/repo"));
+    }
+
+    // ---- get_review_plan: is_self_review, computed once, up front (T3, GUARDRAILS G10) ----
+
+    [Fact]
+    public async Task GetReviewPlan_LocalSource_IsSelfReviewIsNull_NotApplicable()
+    {
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root));
+
+        var plan = await engine.GetReviewPlanAsync(new Source.Local("working"));
+
+        Assert.Null(plan.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetReviewPlan_PrOpenedByAuthenticatedUser_IsSelfReviewTrue()
+    {
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("2", "Mine", "alice", IsSelfReview: true)]);
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root), pullRequestPlatform: platform);
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "2"));
+
+        Assert.True(plan.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetReviewPlan_PrOpenedByAuthenticatedUser_PersistsInSessionState()
+    {
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("2", "Mine", "alice", IsSelfReview: true)]);
+        var store = new SessionStore(_root);
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "2"));
+        var reloaded = store.Load(plan.Session);
+
+        Assert.True(reloaded.Source.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetReviewPlan_PrOpenedByAnotherUser_IsSelfReviewFalse()
+    {
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)]);
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root), pullRequestPlatform: platform);
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "7"));
+
+        Assert.False(plan.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetReviewPlan_PlatformThrows_FailsClosed_IsSelfReviewTrue()
+    {
+        var platform = new FakePullRequestPlatform([], throwOnSummary: true);
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root), pullRequestPlatform: platform);
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "2"));
+
+        Assert.True(plan.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetReviewPlan_NoPlatformConfigured_FailsClosed_IsSelfReviewTrue()
+    {
+        // No pullRequestPlatform injected at all -- still a PR source, so it must fail closed, not null.
+        var engine = new ReviewEngine(new StubProvider(), new SessionStore(_root));
+
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", "2"));
+
+        Assert.True(plan.IsSelfReview);
     }
 }

@@ -101,6 +101,38 @@ public sealed class GitHubPullRequestPlatformTests
         Assert.True(result.Single(p => p.Number == "2").IsSelfReview);
     }
 
+    // ---- GetSummaryAsync: same self-review flag, for a PR opened directly by number (GUARDRAILS G10) ----
+
+    [Fact]
+    public async Task GetSummaryAsync_SelfAuthored_FlagsIsSelfReviewTrue()
+    {
+        var pr = JsonSerializer.Serialize(new { number = 2, title = "Mine", user = new { login = "alice" } });
+        var handler = new SequenceHandler(
+            (HttpStatusCode.OK, """{ "login": "alice" }"""),
+            (HttpStatusCode.OK, pr));
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        var summary = await platform.GetSummaryAsync("owner/repo", "2");
+
+        Assert.Equal("2", summary.Number);
+        Assert.Equal("alice", summary.Author);
+        Assert.True(summary.IsSelfReview);
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_AuthoredByOthers_FlagsIsSelfReviewFalse()
+    {
+        var pr = JsonSerializer.Serialize(new { number = 7, title = "Not mine", user = new { login = "bob" } });
+        var handler = new SequenceHandler(
+            (HttpStatusCode.OK, """{ "login": "alice" }"""),
+            (HttpStatusCode.OK, pr));
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        var summary = await platform.GetSummaryAsync("owner/repo", "7");
+
+        Assert.False(summary.IsSelfReview);
+    }
+
     // ---- GetDiffAsync: asks for the diff media type, not JSON ----
 
     [Fact]

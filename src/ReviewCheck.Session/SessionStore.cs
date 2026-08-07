@@ -19,15 +19,19 @@ public sealed class SessionStore
     /// <summary>Absolute-or-relative path of a session's state file.</summary>
     public string PathFor(string session) => Path.Combine(_root, $"session-{session}.json");
 
-    /// <summary>Analyzes → new session: all blocks pending, current = first block. Writes the file, returns the id.</summary>
-    public string Create(AnalyzedReview analyzed, Source source)
+    /// <summary>
+    /// Analyzes → new session: all blocks pending, current = first block. Writes the file, returns the id.
+    /// <paramref name="isSelfReview"/> is precomputed by the caller (ReviewEngine) for a PR source — see
+    /// <see cref="SourceState.IsSelfReview"/> — and ignored (stays null) for a local source.
+    /// </summary>
+    public string Create(AnalyzedReview analyzed, Source source, bool? isSelfReview = null)
     {
         var id = "s-" + Guid.NewGuid().ToString("N")[..12];
         var blocks = analyzed.Blocks.Select((b, i) => BlockState.FromBlock(i, b)).ToList();
 
         var state = new SessionState(
             Session: id,
-            Source: SourceState.FromSource(source),
+            Source: SourceState.FromSource(source, isSelfReview),
             Title: analyzed.Title,
             Blocks: blocks,
             Progress: new ProgressState(
