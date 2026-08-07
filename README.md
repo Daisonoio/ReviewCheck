@@ -3,7 +3,7 @@
 **Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
 ![status](https://img.shields.io/badge/status-MVP%20built%20·%20local-brightgreen)
-![tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-169%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -17,9 +17,11 @@
 
 > [!IMPORTANT]
 > **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
-> the grounded LLM narration layer (MVP-3) are implemented, covered by **134 passing tests**, and
+> the grounded LLM narration layer (MVP-3) are implemented, covered by **169 passing tests**, and
 > verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
-> accept / request-correction → outcome. C# (Roslyn) is the supported language. See
+> accept / request-correction → outcome. A GitHub pull request works the same way, ending in a real
+> `approve` / `request_changes` / `comment_only` posted to the PR (never for a self-authored one — see
+> [`GUARDRAILS.md`](GUARDRAILS.md) G10). C# (Roslyn) is the supported language. See
 > [Getting started](#getting-started) to run it.
 >
 > **New here? Start with [`docs/README.md`](docs/README.md)** — the essential-docs index.
@@ -159,7 +161,7 @@ flowchart TB
 
 | Phase | Focus | Status |
 |---|---|---|
-| **1 — v1 (MVP)** | Local MCP add-on: local-diff review, C# (Roslyn), BYO-key LLM, the full block-by-block flow. | ✅ **Built** — local-diff pipeline (Roslyn), grounded LLM, 7 MCP tools, session persistence, recovery commands. |
+| **1 — v1 (MVP)** | Local MCP add-on: local-diff review, C# (Roslyn), BYO-key LLM, the full block-by-block flow, GitHub pull request review (read + post). | ✅ **Built** — local-diff pipeline (Roslyn), grounded LLM, 9 MCP tools, session persistence, recovery commands, GitHub PR read/list/post with the no-self-approval gate (GUARDRAILS G10). |
 | **2** | Standalone CLI, dedicated IDE extension, Azure DevOps / GitLab, rich visual concept map. | ⬜ Planned |
 | **3** | Recommended local models, per-repo codebase memory, personalization — all local. | ⬜ Planned |
 | **Ongoing** | Validation study with ADHD/ND users: does guided review improve comprehension *and* defect detection vs a raw diff? | ⬜ Planned |
@@ -174,7 +176,7 @@ src/                  The .NET solution (net8.0):
   ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
   ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
   ReviewCheck.Mcp         The MCP server: the 9 tools + narrator wiring
-tests/                One xUnit project per src project (134 tests)
+tests/                One xUnit project per src project (169 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/ , .claude/     The product agent definition + the Claude Code skill packaging (golden path)
@@ -200,7 +202,7 @@ flow). You install both once, globally, and then use it from **any** repository.
 ```bash
 git clone https://github.com/Daisonoio/ReviewCheck.git
 cd ReviewCheck
-dotnet test        # 134 tests should pass
+dotnet test        # 169 tests should pass
 ```
 
 ### 2-3. Build and register the MCP server — once, globally
@@ -465,7 +467,8 @@ pinned .NET 8 toolchain in a sandbox — identical for every contributor and age
 
 The MVP is built and runnable — a good moment to extend it. Ways to help:
 
-- **Posting to a PR** — a future milestone: read/post a GitHub review from the same block flow.
+- **A second PR platform** — Azure DevOps / GitLab, behind the same `IPullRequestPlatform` seam GitHub
+  already implements.
 - **Language support** — additional language analyzers beyond C# (Roslyn).
 - **Evals** — grow the [capability suite](eval/README.md): the guardrails (grounding, no-verdict,
   co-presence, degradation, declared uncertainty) are scored over a corpus and gate CI. Add cases to
