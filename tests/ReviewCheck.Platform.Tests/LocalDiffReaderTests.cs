@@ -139,6 +139,25 @@ public sealed class LocalDiffReaderTests : IDisposable
         Assert.Throws<GitInvocationException>(() => new LocalDiffReader(_repo).Read("no-such-ref"));
     }
 
+    [Fact]
+    public void Read_RefLooksLikeAGitOption_ThrowsInsteadOfInjectingIt()
+    {
+        // Without --end-of-options  validation, git would interpret this as its own
+        // --output=<file> flag and write the diff to an attacker-chosen path.
+        var ex = Assert.Throws<ArgumentException>(
+() => new LocalDiffReader(_repo).Read("--output=/tmp/rc-injection-poc"));
+
+        Assert.Contains("--output", ex.Message);
+        Assert.False(File.Exists("/tmp/rc-injection-poc"));
+    }
+
+    [Fact]
+    public void Read_RangeWithAnOptionLikeSide_ThrowsInsteadOfInjectingIt()
+    {
+        Assert.Throws<ArgumentException>(
+            () => new LocalDiffReader(_repo).Read("HEAD...--output=/tmp/rc-injection-poc-2"));
+    }
+
     private void Git(string args)
     {
         var psi = new ProcessStartInfo("git", args)

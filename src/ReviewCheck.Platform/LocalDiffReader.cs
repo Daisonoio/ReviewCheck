@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace ReviewCheck.Platform;
 
@@ -17,10 +18,11 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
 
         var args = effective switch
         {
-            "working" => "diff --no-color --unified=3",
-            "staged" => "diff --no-color --unified=3 --cached",
-            _ when effective.Contains("..") => $"diff --no-color --unified=3 {effective}",
-            _ => $"diff --no-color --unified=3 {effective}^!",
+
+            "working" => new[] { "diff", "--no-color", "--unified=3" },
+            "staged" => new[] { "diff", "--no-color", "--unified=3", "--cached" },
+            _ when effective.Contains("..") => DiffArgsFor(effective),
+            _ => DiffArgsFor($"{effective}^!"),
         };
 
         var diffText = RunGit(args);
@@ -37,6 +39,24 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
 
         return new LocalDiffResult(effective, files);
     }
+
+
+    private static string[] DiffArgsFor(string refExpr)
+    {
+        EnsureSafeRef(refExpr);
+        return ["diff", "--no-color", "--unified=3", "--end-of-options", refExpr];
+    }
+
+    private static readonly Regex SafeRefPattern = new(@"^[A-Za-z0-9._/\-\^~:]+$", RegexOptions.Compiled);
+
+    private static void EnsureSafeRef(string refExpr)
+    {
+        if (refExpr.StartsWith('-'))
+            throw new ArgumentException($"Invalid ref '{refExpr}': must not start with '-'.", nameof(refExpr));
+        if (!SafeRefPattern.IsMatch(refExpr))
+            throw new ArgumentException($"Invalid ref '{refExpr}': contains disallowed characters.", nameof(refExpr));
+    }
+
 
     /// <summary>
     /// ReviewCheck's own session store lives under .reviewcheck/. Never surface our own artifacts
@@ -55,7 +75,7 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         var seen = alreadySeen.ToHashSet(StringComparer.Ordinal);
 
         // -z: NUL-separated, so paths with spaces/newlines stay intact. --exclude-standard honors .gitignore.
-        var listing = RunGit("ls-files --others --exclude-standard -z");
+        var listing = RunGit(["ls-files", "--others", "--exclude-standard", "-z"]);
         foreach (var path in listing.Split('\0', StringSplitOptions.RemoveEmptyEntries))
         {
             if (seen.Contains(path) || IsReviewCheckArtifact(path))
@@ -99,20 +119,23 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             switch (@ref)
             {
                 case "working":
-                {
-                    var full = Path.Combine(repoRoot, file.Path);
-                    return File.Exists(full) ? File.ReadAllText(full) : null;
-                }
+                    {
+                        var full = Path.Combine(repoRoot, file.Path);
+                        return File.Exists(full) ? File.ReadAllText(full) : null;
+                    }
                 case "staged":
-                    return RunGit($"show :{file.Path}");
+                    return RunGit(["show", $":{file.Path}"]);
                 default:
-                {
-                    // Range 'A...B' → content at B; single commit C → content at C.
-                    var rev = @ref.Contains("..")
-                        ? @ref[( @ref.LastIndexOf('.') + 1)..]
-                        : @ref;
-                    return RunGit($"show {rev}:{file.Path}");
-                }
+                    {
+                        // Range 'A...B' → content at B; single commit C → content at C.
+                        var rev = @ref.Contains("..")
+                            ? @ref[(@ref.LastIndexOf('.') + 1)..]
+                            : @ref;
+                        // Belt-and-suspenders: `rev` was already validated in Read() via DiffArgsFor,
+                        // but this call doesn't depend on that call order holding forever.
+                        EnsureSafeRef(rev);
+                        return RunGit(["show", "--end-of-options", $"{rev}:{file.Path}"]);
+                    }
             }
         }
         catch (GitInvocationException)
@@ -124,9 +147,9 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
     /// <summary>Hard ceiling so a stuck git (pager, prompt, huge tree, wrong dir) can never hang the tool.</summary>
     private static readonly TimeSpan GitTimeout = TimeSpan.FromSeconds(30);
 
-    private string RunGit(string arguments)
+    private string RunGit(IReadOnlyList<string> arguments)
     {
-        var psi = new ProcessStartInfo("git", arguments)
+        var psi = new ProcessStartInfo("git")
         {
             WorkingDirectory = repoRoot,
             RedirectStandardOutput = true,
@@ -134,6 +157,8 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             RedirectStandardInput = true, // git must never block waiting on stdin (pager/prompt)
             UseShellExecute = false,
         };
+        foreach (var a in arguments)
+            psi.ArgumentList.Add(a);
         // Neutralize interactive git: no pager, no credential/terminal prompts.
         psi.Environment["GIT_PAGER"] = "cat";
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
@@ -146,12 +171,12 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         // buffer is the classic Process deadlock. Async reads drain both at once.
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
-
+        var argsForMessage = string.Join(' ', arguments);
         if (!process.WaitForExit((int)GitTimeout.TotalMilliseconds))
         {
             try { process.Kill(entireProcessTree: true); } catch { /* best effort */ }
             throw new GitInvocationException(
-                $"git {arguments} timed out after {GitTimeout.TotalSeconds:0}s in '{repoRoot}'. " +
+                $"git {argsForMessage} timed out after {GitTimeout.TotalSeconds:0}s in '{repoRoot}'. " +
                 "Is this a git repository? (Set REVIEWCHECK_REPO to the target repo path.)");
         }
 
@@ -160,7 +185,7 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
 
         if (process.ExitCode != 0)
             throw new GitInvocationException(
-                $"git {arguments} failed (exit {process.ExitCode}) in '{repoRoot}': {stderr.Trim()}");
+                $"git {argsForMessage} failed (exit {process.ExitCode}) in '{repoRoot}': {stderr.Trim()}");
 
         return stdout;
     }
