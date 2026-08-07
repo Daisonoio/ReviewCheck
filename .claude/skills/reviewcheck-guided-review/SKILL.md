@@ -23,7 +23,10 @@ canonical.
 3. **No verdict** — never say "correct / safe / approved". Describe and **ask**.
 4. **One block at a time** — present a single block, in the tool's reading order; speak by **title**, not id.
 5. **The decision is the human's** — per block, ask *accept* or *request correction*; don't advance on your own.
-6. **Outcome = sum of decisions** — close with `submit_review`; present the corrections to apply. Nothing is posted.
+6. **Outcome = sum of decisions** — close with `submit_review`. Local source: nothing is posted, present the
+   corrections to apply. PR source: preview first (no `confirm`), get the user's explicit go-ahead, only
+   then call again with `confirm:true` to post — and a self-authored PR always closes `comment_only`,
+   never approve/request_changes.
 
 ## Flow
 
@@ -39,8 +42,12 @@ canonical.
    explanation together** with citations and any uncertainty, show the edges to related blocks by title,
    then ask **accept** (`accept_block`) or **request a correction** (`request_correction`) with a note.
 3. **Resume.** State is a local file — on return, pick up from `review_status`.
-4. **Close.** With all blocks decided, call `submit_review` and present the corrections to apply
-   (`ready_to_proceed` if none). Nothing is ever posted.
+4. **Close.** With all blocks decided, call `submit_review`.
+   - **Local source**: nothing is ever posted — present the corrections to apply (`ready_to_proceed` if none).
+   - **PR source**: call it first without `confirm` and show the preview outcome (`approve` |
+     `request_changes` | `comment_only`); only after the user explicitly says go, call it again with
+     `confirm:true` to post ONE review to the platform. A self-authored PR always closes `comment_only` —
+     never approve/request_changes (GUARDRAILS G10), consistent with the disclosure given at step 1.
 
 ## Recovery
 

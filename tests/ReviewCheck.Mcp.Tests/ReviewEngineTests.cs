@@ -117,7 +117,7 @@ public sealed class ReviewEngineTests : IDisposable
         var plan = await engine.GetReviewPlanAsync(new Source.Local());
         engine.AcceptBlock(plan.Session, plan.Blocks[0].Id); // leave the rest undecided
 
-        var result = engine.SubmitReview(plan.Session, confirm: true);
+        var result = await engine.SubmitReviewAsync(plan.Session, confirm: true);
 
         Assert.False(result.Posted);
         Assert.NotNull(result.UndecidedBlocks);
@@ -133,7 +133,7 @@ public sealed class ReviewEngineTests : IDisposable
         foreach (var b in plan.Blocks)
             engine.AcceptBlock(plan.Session, b.Id);
 
-        var result = engine.SubmitReview(plan.Session, confirm: false);
+        var result = await engine.SubmitReviewAsync(plan.Session, confirm: false);
 
         Assert.Equal("ready_to_proceed", result.Outcome);
         Assert.False(result.Posted);
@@ -149,7 +149,7 @@ public sealed class ReviewEngineTests : IDisposable
             engine.AcceptBlock(plan.Session, b.Id);
         engine.RequestCorrection(plan.Session, plan.Blocks[1].Id, "extract a constant");
 
-        var result = engine.SubmitReview(plan.Session, confirm: false);
+        var result = await engine.SubmitReviewAsync(plan.Session, confirm: false);
 
         Assert.Equal("corrections_to_apply", result.Outcome);
         Assert.False(result.Posted);
@@ -158,20 +158,114 @@ public sealed class ReviewEngineTests : IDisposable
     }
 
     [Fact]
-    public async Task Submit_PullRequestSource_IsOutOfScope_AndPostsNothing()
+    public async Task Submit_PullRequestSource_NoPlatformConfigured_FailsClosed_PostsNothing()
     {
         var engine = NewEngine();
-        // Open a PR-source session directly through the store so submit sees the reserved PR seam.
+        // Open a PR-source session directly through the store, with no pullRequestPlatform wired into
+        // the engine — is_self_review is also unset (null), so this exercises BOTH fail-closed paths.
         var store = new SessionStore(_root);
         var analyzed = await new StubProvider().AnalyzeAsync(new Source.Local(), new FactsNarrator());
         var session = store.Create(analyzed, new Source.PullRequest("github", "org/repo", "42"));
         foreach (var b in analyzed.Blocks)
             store.SetStatus(session, b.Id, BlockStatus.Accepted);
 
-        var result = engine.SubmitReview(session, confirm: true);
+        var result = await engine.SubmitReviewAsync(session, confirm: true);
 
         Assert.Equal("comment_only", result.Outcome);
         Assert.False(result.Posted);
+    }
+
+    // ---- submit_review on a PR: real posting, gated by confirm and is_self_review (T4, GUARDRAILS G8/G10) ----
+
+    private static async Task<string> OpenPrSession(
+        SessionStore store, IPullRequestPlatform platform, string prNumber, bool allAccepted, string? correctionNote = null)
+    {
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+        var plan = await engine.GetReviewPlanAsync(new Source.PullRequest("github", "org/repo", prNumber));
+        foreach (var b in plan.Blocks)
+            engine.AcceptBlock(plan.Session, b.Id);
+        if (correctionNote is not null)
+            engine.RequestCorrection(plan.Session, plan.Blocks[0].Id, correctionNote);
+        return plan.Session;
+    }
+
+    [Fact]
+    public async Task Submit_OthersPr_AllAccepted_Confirmed_PostsApprove()
+    {
+        var store = new SessionStore(_root);
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)]);
+        var session = await OpenPrSession(store, platform, "7", allAccepted: true);
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+
+        var result = await engine.SubmitReviewAsync(session, confirm: true);
+
+        Assert.Equal("approve", result.Outcome);
+        Assert.True(result.Posted);
+        Assert.Equal(PullRequestReviewEvent.Approve, platform.LastSubmit!.Value.Event);
+        Assert.Empty(platform.LastSubmit.Value.Comments);
+    }
+
+    [Fact]
+    public async Task Submit_OthersPr_WithCorrection_Confirmed_PostsRequestChangesWithComment()
+    {
+        var store = new SessionStore(_root);
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)]);
+        var session = await OpenPrSession(store, platform, "7", allAccepted: true, correctionNote: "please add a null check");
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+
+        var result = await engine.SubmitReviewAsync(session, confirm: true);
+
+        Assert.Equal("request_changes", result.Outcome);
+        Assert.True(result.Posted);
+        Assert.Equal(PullRequestReviewEvent.RequestChanges, platform.LastSubmit!.Value.Event);
+        Assert.Contains(platform.LastSubmit.Value.Comments, c => c.Body == "please add a null check");
+    }
+
+    [Fact]
+    public async Task Submit_OwnPr_AllAccepted_Confirmed_ForcesCommentOnly_NeverApprove()
+    {
+        var store = new SessionStore(_root);
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("2", "Mine", "alice", IsSelfReview: true)]);
+        var session = await OpenPrSession(store, platform, "2", allAccepted: true);
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+
+        var result = await engine.SubmitReviewAsync(session, confirm: true);
+
+        Assert.Equal("comment_only", result.Outcome);
+        Assert.True(result.Posted);
+        Assert.Equal(PullRequestReviewEvent.Comment, platform.LastSubmit!.Value.Event);
+    }
+
+    [Fact]
+    public async Task Submit_Pr_WithoutConfirm_PreviewsOutcome_AndCallsThePlatformNever()
+    {
+        var store = new SessionStore(_root);
+        var platform = new FakePullRequestPlatform([new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)]);
+        var session = await OpenPrSession(store, platform, "7", allAccepted: true);
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: platform);
+
+        var result = await engine.SubmitReviewAsync(session, confirm: false);
+
+        Assert.Equal("approve", result.Outcome);
+        Assert.False(result.Posted);
+        Assert.Null(platform.LastSubmit); // G6/G8: no confirm, no network call at all
+    }
+
+    [Fact]
+    public async Task Submit_Pr_PlatformThrowsOnPosting_ReturnsUnpostedWithReason()
+    {
+        var store = new SessionStore(_root);
+        var summaryPlatform = new FakePullRequestPlatform([new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)]);
+        var session = await OpenPrSession(store, summaryPlatform, "7", allAccepted: true);
+        var throwingPlatform = new FakePullRequestPlatform(
+            [new PullRequestSummary("7", "Not mine", "bob", IsSelfReview: false)], throwOnSubmit: true);
+        var engine = new ReviewEngine(new StubProvider(), store, pullRequestPlatform: throwingPlatform);
+
+        var result = await engine.SubmitReviewAsync(session, confirm: true);
+
+        Assert.Equal("approve", result.Outcome);
+        Assert.False(result.Posted);
+        Assert.Contains("scripted posting failure", result.Summary);
     }
 
     // ---- review_health: local oversight signals (GUARDRAILS.md §4) ----
@@ -243,9 +337,13 @@ public sealed class ReviewEngineTests : IDisposable
 
     // ---- list_pull_requests: excludes self-authored PRs (GUARDRAILS G10) ----
 
-    private sealed class FakePullRequestPlatform(IReadOnlyList<PullRequestSummary> summaries, bool throwOnSummary = false)
+    private sealed class FakePullRequestPlatform(
+        IReadOnlyList<PullRequestSummary> summaries, bool throwOnSummary = false, bool throwOnSubmit = false)
         : IPullRequestPlatform
     {
+        public (string Repo, string Pr, PullRequestReviewEvent Event, IReadOnlyList<PullRequestComment> Comments, string? Body)? LastSubmit
+        { get; private set; }
+
         public Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default) =>
             Task.FromResult(summaries);
 
@@ -266,9 +364,15 @@ public sealed class ReviewEngineTests : IDisposable
             throw new NotSupportedException("Not exercised here.");
         public Task<string> GetAuthenticatedLoginAsync(CancellationToken ct = default) =>
             throw new NotSupportedException("Not exercised here.");
+
         public Task SubmitReviewAsync(string repo, string pr, PullRequestReviewEvent reviewEvent,
-            IReadOnlyList<PullRequestComment> comments, CancellationToken ct = default) =>
-            throw new NotSupportedException("Not exercised here.");
+            IReadOnlyList<PullRequestComment> comments, string? body = null, CancellationToken ct = default)
+        {
+            if (throwOnSubmit)
+                throw new PullRequestPlatformUnavailableException("scripted posting failure");
+            LastSubmit = (repo, pr, reviewEvent, comments, body);
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]

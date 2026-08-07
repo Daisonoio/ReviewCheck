@@ -105,9 +105,14 @@ English by construction; do not translate titles, explanations, or citations.)
    - Ask: **accept** (`accept_block`) or **request a correction** with a note (`request_correction`)?
 3. **Interruption/resume.** State is on a local file: if the user stops, on resume pick up from
    `review_status` ("you were at block N, here's what you had decided").
-4. **Closure.** With all blocks decided, call `submit_review`: present the summary and the
-   **corrections to apply** (`ready_to_proceed` if there are none); the user fixes them (or has the
-   agent fix them). Nothing is ever posted.
+4. **Closure.** With all blocks decided, call `submit_review`.
+   - **Local source**: nothing is ever posted. Present the summary and the **corrections to apply**
+     (`ready_to_proceed` if there are none); the user fixes them (or has the agent fix them).
+   - **Pull request source**: call it first WITHOUT `confirm` and show the preview outcome
+     (`approve` | `request_changes` | `comment_only`) — nothing is posted yet. Ask the user to confirm
+     out loud before calling it again with `confirm:true`, which posts ONE review to the platform. A
+     self-authored PR always closes `comment_only` (you told them this up front, at step 1) — never
+     approve/request_changes, no matter how it's decided (GUARDRAILS G10).
 
 ## Oversight signals (on request only)
 

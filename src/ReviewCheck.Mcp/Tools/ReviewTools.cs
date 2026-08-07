@@ -56,9 +56,9 @@ public static class ReviewTools
         => engine.ReviewStatus(session);
 
     [McpServerTool(Name = "submit_review")]
-    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Posts nothing: returns a summary + the corrections to apply locally.")]
-    public static SubmitResult SubmitReview(ReviewEngine engine, string session, bool confirm = false)
-        => engine.SubmitReview(session, confirm);
+    [Description("Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. LOCAL source: posts nothing, returns a summary + the corrections to apply locally. PULL REQUEST source: with confirm:true, posts ONE review to the platform (approve | request_changes | comment_only); without confirm, previews the outcome and posts nothing. A self-authored PR always closes as comment_only, never approve/request_changes (GUARDRAILS G10).")]
+    public static Task<SubmitResult> SubmitReview(ReviewEngine engine, string session, bool confirm = false)
+        => engine.SubmitReviewAsync(session, confirm);
 
     [McpServerTool(Name = "review_health")]
     [Description("Local oversight signals for THIS session (GUARDRAILS.md §4): grounding coverage, forbidden evaluative language, and the correction/acceptance ratio. Read-only, no side effects. Show only when the user asks — never surface unprompted, and never as a judgment of the reviewer.")]

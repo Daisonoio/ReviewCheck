@@ -296,7 +296,7 @@
     },
     {
       "name": "submit_review",
-      "description": "Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Behavior depends on the SOURCE: (A) LOCAL (pre-PR): posts NOTHING — returns a summary + a list of corrections to apply; outcome 'ready_to_proceed' (all accepted) or 'corrections_to_apply' (>=1 correction). Here the self-approval problem does not exist. (B) PULL REQUEST: posts the outcome to the platform with 'confirm':true (without confirmation = preview); outcome 'approve' or 'request_changes'; FALLBACK 'comment_only' if the platform forbids self-reviewing your own PR.",
+      "description": "Closes the review. The outcome is the SUM of the per-block human decisions (never an AI verdict). Fails if any block is undecided. Behavior depends on the SOURCE: (A) LOCAL (pre-PR): posts NOTHING — returns a summary + a list of corrections to apply; outcome 'ready_to_proceed' (all accepted) or 'corrections_to_apply' (>=1 correction). Here the self-approval problem does not exist. (B) PULL REQUEST: with 'confirm':true, posts ONE review to the platform — 'approve' (all accepted) or 'request_changes' (>=1 correction, posted as inline comments from the reviewer's own notes); without confirm, returns the SAME outcome as a preview and posts nothing. A self-authored PR (is_self_review from get_review_plan) ALWAYS closes as 'comment_only' instead — approve/request_changes are never even attempted (GUARDRAILS G10).",
       "inputSchema": {
         "type": "object",
         "required": [ "session" ],
@@ -305,7 +305,7 @@
           "confirm": {
             "type": "boolean",
             "default": false,
-            "description": "Reserved. For the local review nothing is ever posted, so it is ignored."
+            "description": "For a pull request source: without confirm, this is a preview only and nothing is posted (GUARDRAILS G6/G8). Ignored for a local review, which never posts."
           }
         }
       },
@@ -316,11 +316,11 @@
           "outcome": {
             "type": "string",
             "enum": [ "ready_to_proceed", "corrections_to_apply", "approve", "request_changes", "comment_only" ],
-            "description": "The local review outcome: ready_to_proceed (all accepted) | corrections_to_apply (≥1 correction)."
+            "description": "Local review: ready_to_proceed (all accepted) | corrections_to_apply (≥1 correction). Pull request: approve | request_changes | comment_only (always this last one when is_self_review is true)."
           },
           "posted": {
             "type": "boolean",
-            "description": "Always false for the local review — nothing is ever posted."
+            "description": "True only when a pull request review was actually sent to the platform (confirm:true, platform reachable). Always false for the local review, for a preview (confirm:false), or if posting failed — see summary."
           },
           "summary": { "type": "string" },
           "notes": {
