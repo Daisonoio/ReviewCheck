@@ -47,7 +47,7 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         return ["diff", "--no-color", "--unified=3", "--end-of-options", refExpr];
     }
 
-    private static readonly Regex SafeRefPattern = new(@"^[A-Za-z0-9._/\-\^~:]+$", RegexOptions.Compiled);
+    private static readonly Regex SafeRefPattern = new(@"^[A-Za-z0-9._/\-\^~:!]+$", RegexOptions.Compiled);
 
     private static void EnsureSafeRef(string refExpr)
     {
