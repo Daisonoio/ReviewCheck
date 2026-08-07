@@ -8,6 +8,7 @@ namespace ReviewCheck.Core;
 /// </summary>
 public static class BlockGuard
 {
+
     /// <summary>Validates the invariant and returns the same block; throws <see cref="InvalidBlockException"/> otherwise.</summary>
     public static Block Ensure(Block block)
     {
@@ -34,6 +35,12 @@ public static class BlockGuard
                 c is null || string.IsNullOrWhiteSpace(c.File) || string.IsNullOrWhiteSpace(c.Lines)))
             throw new InvalidBlockException($"Block '{block.Id}' has an empty citation (grounding violated).");
 
+        var malformed = block.Explanation.Citations.FirstOrDefault(c => !IsWellFormedLineRange(c.Lines));
+        if (malformed is not null)
+            throw new InvalidBlockException(
+                $"Block '{block.Id}' has a malformed citation line range '{malformed.Lines}' " +
+                $"(expected \"N\" or \"N-M\" with N <= M, grounding violated).");
+
         return block;
     }
 
@@ -49,6 +56,25 @@ public static class BlockGuard
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// A real citation's line range (<c>AnalysisPipeline.FormatRange</c>) is always a single 1-based
+    /// line "N" or a range "N-M" with N &lt;= M. Anything else — non-numeric, zero/negative, or a
+    /// backwards range like "15-12" — is structurally present but semantically nonsense, so it isn't
+    /// real grounding even though the earlier non-empty check lets it through.
+    /// </summary>
+    private static bool IsWellFormedLineRange(string lines)
+    {
+        var parts = lines.Split('-');
+        if (parts.Length is not (1 or 2))
+            return false;
+        if (!int.TryParse(parts[0], out var start) || start < 1)
+            return false;
+        if (parts.Length == 1)
+            return true;
+
+        return int.TryParse(parts[1], out var end) && end >= start;
     }
 }
 

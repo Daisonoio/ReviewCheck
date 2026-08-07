@@ -1,5 +1,12 @@
 namespace ReviewCheck.Platform;
 
+/// <summary>The platform identifiers a PR source's <c>Platform</c> field recognizes.</summary>
+public static class PullRequestPlatforms
+{
+    /// <summary>The only platform actually implemented today (<see cref="GitHubPullRequestPlatform"/>).</summary>
+    public const string GitHub = "github";
+}
+
 /// <summary>
 /// One open pull request, as listed for the "choose which PR to review" step. <see cref="IsSelfReview"/>
 /// is computed once here (author == the authenticated token identity) so a caller can tell the user

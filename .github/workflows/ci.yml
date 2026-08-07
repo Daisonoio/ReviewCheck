@@ -25,7 +25,17 @@ jobs:
       - name: Build
         run: dotnet build ReviewCheck.sln --configuration Release --no-restore
       - name: Test
-        run: dotnet test ReviewCheck.sln --configuration Release --no-build --verbosity normal
+        run: >
+          dotnet test ReviewCheck.sln --configuration Release --no-build --verbosity normal
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+      # Informational only — no threshold gate yet, just visibility into what the 171 tests actually
+      # exercise. Coverlet.collector is already a test-project dependency; this just turns it on.
+      - name: Upload code coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage/**/coverage.cobertura.xml
 
   capability-evals:
     # Treat the agent-capability guardrails (grounding, no-verdict, degradation, …) as a gate:

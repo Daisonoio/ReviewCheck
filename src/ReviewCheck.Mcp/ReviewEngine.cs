@@ -29,7 +29,7 @@ public sealed class ReviewEngine(
     /// </summary>
     public async Task<IReadOnlyList<PullRequestSummary>> ListOtherPullRequestsAsync(string platform, string repo)
     {
-        if (!string.Equals(platform, "github", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(platform, PullRequestPlatforms.GitHub, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 $"Platform '{platform}' is not supported yet — only 'github' lists pull requests today.");
         if (pullRequestPlatform is null)
@@ -92,7 +92,7 @@ public sealed class ReviewEngine(
     /// </summary>
     private async Task<bool?> ResolveIsSelfReviewAsync(Source source)
     {
-        if (source is not Source.PullRequest { Platform: "github" } pr)
+        if (source is not Source.PullRequest { Platform: PullRequestPlatforms.GitHub } pr)
             return null; // not a PR at all — the question doesn't apply, distinct from "couldn't tell"
 
         if (pullRequestPlatform is null)

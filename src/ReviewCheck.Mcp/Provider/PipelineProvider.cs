@@ -25,7 +25,7 @@ public sealed class PipelineProvider(
         var (diff, label) = source switch
         {
             Source.Local local => (diffReader.Read(local.Ref), "Local changes"),
-            Source.PullRequest { Platform: "github" } pr =>
+            Source.PullRequest { Platform: PullRequestPlatforms.GitHub } pr =>
                 (await new GitHubDiffReader(pullRequestPlatform, pr.Repo, pr.Pr).ReadAsync(), $"Pull request #{pr.Pr}"),
             Source.PullRequest pr => throw new InvalidOperationException(
                 $"Platform '{pr.Platform}' is not supported yet — only 'github' reviews a remote pull request today."),

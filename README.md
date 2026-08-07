@@ -3,7 +3,7 @@
 **Guided, step-by-step code review that helps you actually understand the code an AI wrote for you — so you can own it, not just approve it.**
 
 ![status](https://img.shields.io/badge/status-MVP%20built%20·%20local-brightgreen)
-![tests](https://img.shields.io/badge/tests-169%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-180%20passing-brightgreen)
 ![type](https://img.shields.io/badge/form-local%20MCP%20add--on-blueviolet)
 ![privacy](https://img.shields.io/badge/privacy-local%20only%20·%20no%20backend-brightgreen)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -17,7 +17,7 @@
 
 > [!IMPORTANT]
 > **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
-> the grounded LLM narration layer (MVP-3) are implemented, covered by **169 passing tests**, and
+> the grounded LLM narration layer (MVP-3) are implemented, covered by **180 passing tests**, and
 > verified end-to-end inside Claude Code: a local `git diff` → a guided, block-by-block review →
 > accept / request-correction → outcome. A GitHub pull request works the same way, ending in a real
 > `approve` / `request_changes` / `comment_only` posted to the PR (never for a self-authored one — see
@@ -40,8 +40,9 @@
 - [Getting started](#getting-started)
 - [Contributing](#contributing)
 - [Security & privacy](#security--privacy)
+- [Changelog](#changelog)
 - [License](#license)
-- [Install into Visual Studio Enterprise](#install-into-visual-studio-enterprise)
+- [Visual Studio (experimental)](#visual-studio-experimental)
 
 ---
 
@@ -176,7 +177,7 @@ src/                  The .NET solution (net8.0):
   ReviewCheck.Llm         ILlmProvider (BYO key) + LlmAdapter + rubric + FactsNarrator floor
   ReviewCheck.Session     Session persistence (local JSON under .reviewcheck/)
   ReviewCheck.Mcp         The MCP server: the 9 tools + narrator wiring
-tests/                One xUnit project per src project (169 tests)
+tests/                One xUnit project per src project (180 tests)
 docs/                 Contracts (13), MVP plans (22–25), agent plan (21), flow example (12), index (README).
 spec/                 Machine-readable contracts: mcp-tools.json, session-state.schema.json
 agent/ , .claude/     The product agent definition + the Claude Code skill packaging (golden path)
@@ -202,7 +203,7 @@ flow). You install both once, globally, and then use it from **any** repository.
 ```bash
 git clone https://github.com/Daisonoio/ReviewCheck.git
 cd ReviewCheck
-dotnet test        # 169 tests should pass
+dotnet test        # 180 tests should pass
 ```
 
 ### 2-3. Build and register the MCP server — once, globally
@@ -341,38 +342,6 @@ Restart Claude Code so it re-reads commands and launches the server. On startup 
 to stderr naming the active narrator (visible with `claude --debug`), e.g.
 `[reviewcheck] narrator: no key — host model interprets the code, 🔴 disclaimer …`.
 
-## Install into Visual Studio Enterprise
-
-### Clone / Add Agent Files
-
-The following files must be in your repository:
-
-```
-.github/
-├── agents/
-│   └── reviewcheck.agent.md    ← Agent definition (already included)
-```
-
-## Configure MCP Server 
-
-### **Visual Studio**
-
-1. **C:\Users\<your-User>\.mcp.json
-
-2 . Add in your .mcp.json file
-  ```json
-       "reviewcheck": {
-      "type": "stdio",
-      "command": "C:\Users\<your-reviewCheck-Directory_Path>\bin\mcp\\ReviewCheck.Mcp.exe",
-      "args": [],
-      "env": {}
-    }
-  ```
-
-**Note: There is currently a known issue in Visual Studio that is under investigation. Further updates will be provided once the root cause has been identified.**
-
-
-
 ### 5. Use it
 
 Open Claude Code **in the repository you want to review**, make (or let the agent make) some changes,
@@ -386,6 +355,35 @@ or just ask: *"review my changes with ReviewCheck"*. It reads the local `git dif
 **including new untracked files**), splits it into ordered blocks, and walks you through them one at a
 time — **accept** or **request a correction** per block — then a final outcome that is the sum of your
 decisions. Nothing is ever posted.
+
+### Visual Studio (experimental)
+
+> [!WARNING]
+> **Not verified end-to-end — there is a known, unresolved connection issue.** Claude Code (documented
+> above) is the only host this project has actually verified. Treat what follows as a starting point to
+> debug from, not a supported path yet. If you get it working (or find the fix), please open an issue or
+> a PR.
+
+The agent definition needs to be present at:
+
+```
+.github/agents/reviewcheck.agent.md
+```
+
+Then register the MCP server in `%USERPROFILE%\.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "reviewcheck": {
+      "type": "stdio",
+      "command": "C:\\path\\to\\ReviewCheck\\bin\\mcp\\ReviewCheck.Mcp.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
 
 ### Try it on the sample repo — TestRepo
 
@@ -486,6 +484,10 @@ ReviewCheck handles source code — the most sensitive asset a software team has
 first-class concern, not an afterthought. The local, no-backend model dissolves whole classes of SaaS
 risk; the residual focus is **local token handling**, **supply-chain integrity** of the OSS package,
 **no phone-home**, and **indirect prompt injection** via untrusted repo content.
+
+## Changelog
+
+Notable changes are tracked in [`CHANGELOG.md`](CHANGELOG.md), grouped by milestone.
 
 ## License
 
