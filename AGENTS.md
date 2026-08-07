@@ -24,7 +24,7 @@ citations. The product never depends on the model being correct.
 # Build everything (warnings are errors — see conventions)
 dotnet build ReviewCheck.sln -c Release
 
-# Unit tests (134) — one xUnit project per src project
+# Unit tests (180) — one xUnit project per src project
 dotnet test ReviewCheck.sln
 
 # Capability eval suite — scores the guardrails over a corpus, exits non-zero on regression

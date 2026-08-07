@@ -74,6 +74,36 @@ public class BlockGuardTests
         Assert.Throws<InvalidBlockException>(() => BlockGuard.Ensure(block));
     }
 
+    [Theory]
+    [InlineData("banana")]
+    [InlineData("12-")]
+    [InlineData("-12")]
+    [InlineData("12,15")]
+    [InlineData("15-12")] // backwards range: syntactically "N-M" but not a real range — see note below
+    public void Block_WithMalformedCitationLineRange_Fails(string lines)
+    {
+        var block = ValidBlock() with
+        {
+            Explanation = ValidExplanation() with { Citations = [new Citation("File.cs", lines)] },
+        };
+
+        var ex = Assert.Throws<InvalidBlockException>(() => BlockGuard.Ensure(block));
+        Assert.Contains("malformed citation", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("12")]
+    [InlineData("1-15")]
+    public void Block_WithWellFormedCitationLineRange_Passes(string lines)
+    {
+        var block = ValidBlock() with
+        {
+            Explanation = ValidExplanation() with { Citations = [new Citation("File.cs", lines)] },
+        };
+
+        Assert.True(BlockGuard.IsValid(block));
+    }
+
     [Fact]
     public void Block_WithEmptyWhatOrWhy_Fails()
     {

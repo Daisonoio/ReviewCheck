@@ -67,6 +67,22 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
         path.StartsWith(".reviewcheck\\", StringComparison.Ordinal);
 
     /// <summary>
+    /// Resolves <paramref name="relativePath"/> under <see cref="repoRoot"/> and returns null if the
+    /// result would land OUTSIDE it. Defense in depth: these paths come from git's own diff/ls-files
+    /// output, which shouldn't contain "../" traversal under normal operation — but this file reads
+    /// from disk using them, so it doesn't rely on that assumption holding.
+    /// </summary>
+    private string? ResolveUnderRoot(string relativePath)
+    {
+        var root = Path.GetFullPath(repoRoot);
+        var rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+        var full = Path.GetFullPath(Path.Combine(root, relativePath));
+        return full.StartsWith(rootWithSeparator, StringComparison.Ordinal) ? full : null;
+    }
+
+    /// <summary>
     /// Untracked, non-ignored files as synthetic "added" diffs (whole file = additions), so the
     /// pipeline sees new files exactly as if git had diffed them against nothing.
     /// </summary>
@@ -81,10 +97,14 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             if (seen.Contains(path) || IsReviewCheckArtifact(path))
                 continue;
 
+            var full = ResolveUnderRoot(path);
+            if (full is null)
+                continue; // would escape repoRoot — never read outside it
+
             string text;
             try
             {
-                text = File.ReadAllText(Path.Combine(repoRoot, path));
+                text = File.ReadAllText(full);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
@@ -120,8 +140,8 @@ public sealed class LocalDiffReader(string repoRoot) : IDiffReader
             {
                 case "working":
                     {
-                        var full = Path.Combine(repoRoot, file.Path);
-                        return File.Exists(full) ? File.ReadAllText(full) : null;
+                        var full = ResolveUnderRoot(file.Path);
+                        return full is not null && File.Exists(full) ? File.ReadAllText(full) : null;
                     }
                 case "staged":
                     return RunGit(["show", $":{file.Path}"]);

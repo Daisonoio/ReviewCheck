@@ -35,6 +35,31 @@ public sealed class LlmOutputParserTests
     }
 
     [Fact]
+    public void ProseWithAnUnrelatedBraceBeforeTheRealJson_StillParses()
+    {
+        // A naive first-'{'/last-'}' scan would span from the prose's stray brace all the way to the
+        // real object's closing brace, producing invalid JSON. The balanced scan should skip past the
+        // unrelated "{ key: value }" and find the real object instead.
+        var noisy = $$"""
+            Note: the shape is like a map { key: value } internally, but here is the actual reply:
+            {{Valid}}
+            """;
+
+        Assert.True(LlmOutputParser.TryParse(noisy, out var e, out _));
+        Assert.Equal("Defines the method.", e.What);
+    }
+
+    [Fact]
+    public void BraceInsideAQuotedValue_DoesNotBreakTheBoundary()
+    {
+        const string withBraceInString =
+            """{"what": "returns a map { }", "why": "y", "link": "l", "uncertainty_semantic": null}""";
+
+        Assert.True(LlmOutputParser.TryParse(withBraceInString, out var e, out _));
+        Assert.Equal("returns a map { }", e.What);
+    }
+
+    [Fact]
     public void NoJsonAtAll_ReturnsFalse_WithReason()
     {
         Assert.False(LlmOutputParser.TryParse("I cannot answer that.", out _, out var error));
