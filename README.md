@@ -13,7 +13,7 @@
 > **human understanding that scales**. ReviewCheck breaks a change into **small, ordered blocks**,
 > explains each one *next to the code it describes*, and walks you through them **one at a time** —
 > so you finish a review having genuinely understood what you're about to ship, and **you** keep the
-> decision. Designed first for developers with ADHD / attention differences; useful for everyone.
+> decision. Designed around a hypothesis about attention and working memory, with developers with ADHD in mind. Not yet validated with them — see the roadmap.
 
 > [!IMPORTANT]
 > **Project status: MVP built and working locally.** The full deterministic core (MVP-1 + MVP-2) and
