@@ -24,4 +24,5 @@ exec docker run -i --rm \
   -e REVIEWCHECK_LLM_MODEL \
   -e REVIEWCHECK_NARRATOR \
   -e GITHUB_TOKEN \
+  --user $(id -u):$(id -g)\
   reviewcheck
