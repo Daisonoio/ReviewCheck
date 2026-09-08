@@ -26,15 +26,19 @@ RUN dotnet publish src/ReviewCheck.Mcp/ReviewCheck.Mcp.csproj -c Release -o /app
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
 
 # The server shells out to git to read the local diff.
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
     && rm -rf /var/lib/apt/lists/* \
-    # A mounted repo has a different owner than the container user; trust it so git won't refuse.
-    && git config --system --add safe.directory '*'
+    && git config --system --add safe.directory '/repo'
+
+RUN groupadd 'UtenteBase' \
+    && useradd -g 'UtenteBase' 'Utente_1'
 
 COPY --from=build /app /app
 
 # The repository under review is mounted here and read via git.
 WORKDIR /repo
 ENV REVIEWCHECK_REPO=/repo
+USER Utente_1
 ENTRYPOINT ["dotnet", "/app/ReviewCheck.Mcp.dll"]
