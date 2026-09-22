@@ -38,7 +38,7 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
     public async Task<IReadOnlyList<PullRequestSummary>> ListAsync(string repo, CancellationToken ct = default)
     {
         var login = await GetAuthenticatedLoginAsync(ct);
-        var body = await SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls?state=open", null, JsonAcceptHeader, ct);
+        var body = await SendAsync(HttpMethod.Get, $"/repos/{Econdedpath(repo)}/pulls?state=open", null, JsonAcceptHeader, ct);
 
         using var doc = JsonDocument.Parse(body);
         var result = new List<PullRequestSummary>();
@@ -57,7 +57,7 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
     public async Task<PullRequestSummary> GetSummaryAsync(string repo, string pr, CancellationToken ct = default)
     {
         var login = await GetAuthenticatedLoginAsync(ct);
-        var body = await SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, JsonAcceptHeader, ct);
+        var body = await SendAsync(HttpMethod.Get, $"/repos/{Econdedpath(repo)}/pulls/{Uri.EscapeDataString(pr)}", null, JsonAcceptHeader, ct);
 
         using var doc = JsonDocument.Parse(body);
         var author = doc.RootElement.GetProperty("user").GetProperty("login").GetString() ?? "";
@@ -69,11 +69,11 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
     }
 
     public Task<string> GetDiffAsync(string repo, string pr, CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, DiffAcceptHeader, ct);
+        SendAsync(HttpMethod.Get, $"/repos/{Econdedpath(repo)}/pulls/{Uri.EscapeDataString(pr)}", null, DiffAcceptHeader, ct);
 
     public async Task<string> GetHeadRefAsync(string repo, string pr, CancellationToken ct = default)
     {
-        var body = await SendAsync(HttpMethod.Get, $"/repos/{repo}/pulls/{pr}", null, JsonAcceptHeader, ct);
+        var body = await SendAsync(HttpMethod.Get, $"/repos/{Econdedpath(repo)}/pulls/{Uri.EscapeDataString(pr)}", null, JsonAcceptHeader, ct);
         using var doc = JsonDocument.Parse(body);
         return doc.RootElement.TryGetProperty("head", out var head) &&
                head.TryGetProperty("sha", out var sha) && sha.GetString() is { } s
@@ -92,7 +92,7 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
         {
             var encodedPath = string.Join('/', path.Split('/').Select(Uri.EscapeDataString));
             return await SendAsync(
-                HttpMethod.Get, $"/repos/{repo}/contents/{encodedPath}?ref={Uri.EscapeDataString(@ref)}",
+                HttpMethod.Get, $"/repos/{Econdedpath(repo)}/contents/{encodedPath}?ref={Uri.EscapeDataString(@ref)}",
                 null, RawAcceptHeader, ct);
         }
         catch (PullRequestPlatformUnavailableException)
@@ -120,7 +120,7 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
             body = body ?? "",
             comments = comments.Select(c => new { path = c.Path, line = ParseLine(c.Line), body = c.Body }),
         });
-        return SendAsync(HttpMethod.Post, $"/repos/{repo}/pulls/{pr}/reviews", payload, JsonAcceptHeader, ct);
+        return SendAsync(HttpMethod.Post, $"/repos/{Econdedpath(repo)}/pulls/{Uri.EscapeDataString(pr)}/reviews", payload, JsonAcceptHeader, ct);
     }
 
     private static string ToGitHubEvent(PullRequestReviewEvent reviewEvent) => reviewEvent switch
@@ -178,4 +178,9 @@ public sealed class GitHubPullRequestPlatform : IPullRequestPlatform
     }
 
     private static string Truncate(string s) => s.Length <= 300 ? s : s[..300] + "…";
+
+    private static string Econdedpath (string pathToEncode)
+    {
+        return string.Join('/', pathToEncode.Split('/', 2).Select(Uri.EscapeDataString));
+    }
 }

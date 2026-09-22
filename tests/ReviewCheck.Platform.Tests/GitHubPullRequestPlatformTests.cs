@@ -149,6 +149,35 @@ public sealed class GitHubPullRequestPlatformTests
         Assert.Contains("/repos/owner/repo/pulls/42", handler.LastRequest.RequestUri!.ToString());
     }
 
+    // ---- repo/pr encoding: a malformed value must never grow the URL an extra path segment ----
+
+    [Fact]
+    public async Task GetDiffAsync_RepoWithAnExtraSlash_KeepsItAsOneEncodedSegment_NotANewPathSegment()
+    {
+        var handler = new StubHandler(HttpStatusCode.OK, "diff");
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        await platform.GetDiffAsync("owner/repo/extra-segment", "42");
+
+        var requestPath = handler.LastRequest!.RequestUri!.AbsolutePath;
+        // The legitimate owner/repo slash stays real; anything after it collapses into ONE segment.
+        Assert.Equal("/repos/owner/repo%2Fextra-segment/pulls/42", requestPath);
+        Assert.DoesNotContain("/repos/owner/repo/extra-segment/pulls/42", handler.LastRequest.RequestUri.ToString());
+    }
+
+    [Fact]
+    public async Task GetDiffAsync_PrWithASlash_IsFullyEncoded_NeverAddsAPathSegment()
+    {
+        var handler = new StubHandler(HttpStatusCode.OK, "diff");
+        var platform = new GitHubPullRequestPlatform(new HttpClient(handler), Token);
+
+        await platform.GetDiffAsync("owner/repo", "42/../../secrets");
+
+        var requestPath = handler.LastRequest!.RequestUri!.AbsolutePath;
+        // Unlike repo, pr has NO legitimate internal slash — every slash in it must be encoded.
+        Assert.Equal("/repos/owner/repo/pulls/42%2F..%2F..%2Fsecrets", requestPath);
+    }
+
     // ---- SubmitReviewAsync: the ONLY posting call — carries the event and exactly the given comments ----
 
     [Fact]

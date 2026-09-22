@@ -72,8 +72,9 @@ as an **agent definition (`.md`) + a local MCP server**. It takes a set of chang
 - lets you **accept** or **request a correction** per block;
 - produces the outcome as the **sum of your decisions** — the AI never gives a verdict.
 
-**No backend. No database. No telemetry.** It runs on your machine, uses **your** LLM (your key or a
-local model) and **your** repository access. Your code never leaves your infrastructure.
+**No backend. No database. No telemetry.** It runs on your machine, uses **your** LLM — your own
+Anthropic key, or your host's own model when no key is set — and **your** repository access. Recommended
+local models are on the roadmap (Phase 3), not built yet.
 
 ## How it works
 
@@ -89,7 +90,7 @@ flowchart LR
     H -->|accept| H
     H -->|request correction| H
     H --> O["Outcome = sum of your decisions<br/>(corrections to apply · nothing posted)"]
-    P -. "your LLM (BYO key / local)" .-> L["LLM"]
+    P -. "your LLM (BYO key or host model)" .-> L["LLM"]
 ```
 
 <details>
@@ -143,7 +144,7 @@ flowchart TB
     subgraph RC["ReviewCheck — local MCP server"]
         SR["Source reader<br/>(git diff · or platform PR)"]
         PL["Analysis pipeline<br/>Roslyn · graph · blocks · order · seams"]
-        LA["LLM adapter<br/>(your key / local model)"]
+        LA["LLM adapter<br/>(your key, or host model)"]
         SS["Session store<br/>local JSON file"]
     end
     RC -->|"read local git"| GH["git working tree"]
