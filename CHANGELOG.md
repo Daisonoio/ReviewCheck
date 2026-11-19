@@ -7,6 +7,14 @@ Notable changes to ReviewCheck, grouped by milestone. This project has no tagged
 
 ## [Unreleased]
 
+### Restructure: skill-first (2026-11)
+- Moved the v0.1 implementation (the .NET MCP server, its tests, evals, docs, specs, agent
+  definition, Docker files) into `V 0.1/`, unchanged. CI, Dependabot, the PR labeler, and the
+  devcontainer now point there.
+- Started `skills/reviewcheck/`: a portable Agent Skill (`SKILL.md`, `references/`, `assets/`)
+  that runs the guided review with any skill-capable assistant and uses the rest of the codebase
+  for context. The v0.1 engine is planned to become its optional, downloadable engine.
+
 ### Hardening (2026-08)
 - Fixed a CLI argument-injection vulnerability: a caller-supplied `ref` (e.g. `get_review_plan`'s
   `source.ref`) reached `git` unsanitized, so a value like `--output=/tmp/x` could make `git` write to
