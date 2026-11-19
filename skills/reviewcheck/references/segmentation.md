@@ -9,7 +9,7 @@ Pick the source from what the person asked; default to the working changes.
 
 | Source | Diff | New files |
 |---|---|---|
-| Working changes (default) | `git diff --no-color -U3` | `git ls-files --others --exclude-standard` (read each as fully added) |
+| Working changes (default) | `git diff HEAD --no-color -U3` | `git ls-files --others --exclude-standard` (read each as fully added) |
 | Staged | `git diff --cached --no-color -U3` | included in the diff |
 | Range `A..B` / `A...B` | `git diff --no-color -U3 A...B` | included in the diff |
 | Single commit `C` | `git show --no-color -U3 C` | included in the diff |
@@ -17,6 +17,7 @@ Pick the source from what the person asked; default to the working changes.
 
 Rules:
 - Never include ReviewCheck's own state (`.git/reviewcheck/`).
+- Use git diff --cached instead of git diff HEAD when the repo have no commits yet.
 - Skip binary, generated, minified, and lock files (e.g. `*.min.js`, `package-lock.json`,
   `*.lock`, `bin/`, `obj/`, `dist/`): list their paths in the plan, do not make blocks of them.
 - Secret files: path only, never content (SKILL.md guardrail 9).
