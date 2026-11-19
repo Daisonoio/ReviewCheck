@@ -17,7 +17,7 @@ Pick the source from what the person asked; default to the working changes.
 
 Rules:
 - Never include ReviewCheck's own state (`.git/reviewcheck/`).
-- Use git diff --cached instead of git diff HEAD when the repo have no commits yet.
+- Use `git rev-parse --verify -q HEAD` to verify if Head exists. If not, use `git diff --cached` instead of `git diff HEAD`.
 - Skip binary, generated, minified, and lock files (e.g. `*.min.js`, `package-lock.json`,
   `*.lock`, `bin/`, `obj/`, `dist/`): list their paths in the plan, do not make blocks of them.
 - Secret files: path only, never content (SKILL.md guardrail 9).
