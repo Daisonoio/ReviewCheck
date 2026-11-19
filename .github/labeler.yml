@@ -1,54 +1,59 @@
 # PR auto-labels by changed area (actions/labeler v5). Triage as code.
 "area: core":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Core/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Core/**"
 
 "area: platform":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Platform/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Platform/**"
 
 "area: pipeline":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Pipeline/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Pipeline/**"
 
 "area: llm":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Llm/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Llm/**"
 
 "area: mcp":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Mcp/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Mcp/**"
 
 "area: session":
   - changed-files:
-      - any-glob-to-any-file: "src/ReviewCheck.Session/**"
+      - any-glob-to-any-file: "V 0.1/src/ReviewCheck.Session/**"
+
+"area: skill":
+  - changed-files:
+      - any-glob-to-any-file: "skills/**"
 
 "area: eval":
   - changed-files:
-      - any-glob-to-any-file: "eval/**"
+      - any-glob-to-any-file: "V 0.1/eval/**"
 
 "agent-context":
   - changed-files:
       - any-glob-to-any-file:
-          - "AGENTS.md"
+          - "V 0.1/AGENTS.md"
           - "CLAUDE.md"
-          - "agent/**"
+          - "V 0.1/agent/**"
           - ".claude/**"
+          - "V 0.1/.claude/**"
 
 "tests":
   - changed-files:
-      - any-glob-to-any-file: "tests/**"
+      - any-glob-to-any-file: "V 0.1/tests/**"
 
 "ci":
   - changed-files:
       - any-glob-to-any-file:
           - ".github/**"
-          - "Dockerfile"
+          - "V 0.1/Dockerfile"
           - ".devcontainer/**"
 
 "documentation":
   - changed-files:
       - any-glob-to-any-file:
           - "**/*.md"
-          - "docs/**"
-          - "spec/**"
+          - "V 0.1/docs/**"
+          - "V 0.1/spec/**"

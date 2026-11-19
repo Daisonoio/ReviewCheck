@@ -5,14 +5,14 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "postCreateCommand": "dotnet restore ReviewCheck.sln",
+  "postCreateCommand": "dotnet restore \"V 0.1/ReviewCheck.sln\"",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-dotnettools.csharp"
       ],
       "settings": {
-        "dotnet.defaultSolution": "ReviewCheck.sln"
+        "dotnet.defaultSolution": "V 0.1/ReviewCheck.sln"
       }
     }
   },

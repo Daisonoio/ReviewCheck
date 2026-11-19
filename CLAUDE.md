@@ -1,22 +1,23 @@
 # CLAUDE.md
 
-Project memory for Claude Code. The canonical contributor guide is **[`AGENTS.md`](AGENTS.md)** —
-read it for the build/test/eval commands, the repo map, the guarantees you must not break, and the
-conventions. This file only adds the Claude-Code-specific notes.
+Project memory for Claude Code. ReviewCheck is being rebuilt as a portable agent skill; the
+original .NET MCP server is kept, frozen, under `V 0.1/`.
 
-## Single source of truth
+## Repository layout
 
-Don't duplicate `AGENTS.md` here. If guidance for agents changes, edit `AGENTS.md`; this file stays a
-thin pointer so the two can never drift.
+- `skills/reviewcheck/` — **the product now**: an Agent Skill (`SKILL.md` + `references/` +
+  `assets/`). Plain Markdown read by any skill-capable assistant (Claude Code, GitHub Copilot,
+  Cursor, …). Keep it host-neutral: no host-specific tool names in its instructions.
+- `V 0.1/` — the v0.1 implementation (C# / .NET 8 MCP server, tests, evals, docs). Its contributor
+  guide is [`V 0.1/AGENTS.md`](V%200.1/AGENTS.md); run every .NET command from inside that folder.
+  It is planned to become the skill's optional engine (`skills/reviewcheck/references/engine.md`).
 
-## Claude-Code-specific notes
+## Notes
 
-- **Two agent artifacts, two audiences.** `AGENTS.md` is for an agent *developing* this repo.
-  `agent/reviewcheck.agent.md` (mirrored in `.claude/agents/`) is the *product* agent that runs
-  ReviewCheck for an end user. Don't edit one expecting the other to change.
-- **The product also ships as a skill** — `.claude/skills/reviewcheck-guided-review/SKILL.md` is the
-  Claude Code "golden path" packaging. It and the product agent share the same substance; keep them in
-  sync when the flow changes.
-- **The MCP server is `reviewcheck`.** Register it (`claude mcp add reviewcheck --scope user …`) before
-  the guided-review skill/agent can call its tools.
-- **Warnings are errors.** Any change must build clean under `TreatWarningsAsErrors`.
+- **`SKILL.md` stays short.** Flow and guardrails live there; details go in `references/`, which
+  the assistant reads only when a step points to them.
+- **Guardrails are the point of the product.** Co-presence, grounding, no verdict, one block per
+  turn, the person decides, nothing posted without confirmation. A change that weakens one is
+  wrong by design.
+- **`V 0.1/` builds clean under `TreatWarningsAsErrors`.** CI runs its build, tests, and evals with
+  `working-directory: "V 0.1"`.

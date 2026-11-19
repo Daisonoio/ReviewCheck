@@ -8,6 +8,9 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "V 0.1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
@@ -18,7 +21,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
           restore-keys: nuget-${{ runner.os }}-
       - name: Restore
         run: dotnet restore ReviewCheck.sln
@@ -28,19 +31,22 @@ jobs:
         run: >
           dotnet test ReviewCheck.sln --configuration Release --no-build --verbosity normal
           --collect:"XPlat Code Coverage" --results-directory ./coverage
-      # Informational only — no threshold gate yet, just visibility into what the 171 tests actually
+      # Informational only — no threshold gate yet, just visibility into what the tests actually
       # exercise. Coverlet.collector is already a test-project dependency; this just turns it on.
       - name: Upload code coverage
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: code-coverage
-          path: coverage/**/coverage.cobertura.xml
+          path: V 0.1/coverage/**/coverage.cobertura.xml
 
   capability-evals:
     # Treat the agent-capability guardrails (grounding, no-verdict, degradation, …) as a gate:
     # a capability regression fails the build, exactly like a failing test.
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "V 0.1"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
@@ -50,7 +56,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
           restore-keys: nuget-${{ runner.os }}-
       - name: Run capability eval suite
         run: dotnet run --project eval/ReviewCheck.Evals/ReviewCheck.Evals.csproj -c Release
@@ -59,4 +65,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: eval-report
-          path: eval-report.json
+          path: V 0.1/eval-report.json
