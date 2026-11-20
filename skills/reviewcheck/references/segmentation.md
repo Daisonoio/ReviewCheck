@@ -17,7 +17,7 @@ Pick the source from what the person asked; default to the working changes.
 
 Rules:
 - Never include ReviewCheck's own state (`.git/reviewcheck/`).
-- Use `git rev-parse --verify -q HEAD` to verify if Head exists. If not, use `git diff --cached` instead of `git diff HEAD`.
+- Use `git rev-parse --verify -q HEAD` to verify if HEAD exists. If not, use `git diff --cached` instead of `git diff HEAD`.
 - Skip binary, generated, minified, and lock files (e.g. `*.min.js`, `package-lock.json`,
   `*.lock`, `bin/`, `obj/`, `dist/`): list their paths in the plan, do not make blocks of them.
 - Secret files: path only, never content (SKILL.md guardrail 9).
@@ -28,6 +28,13 @@ Rules:
 
 - **One block = one unit of intent**: a changed function, method, or member; or a group of hunks
   in the same file that only make sense together.
+- lines of code that are removed are blocks like added lines, not part of the next block.
+- added or removed member is a block, even if the change is small.
+- the code are taken by the diff, not by what the person changed in their editor. If a member is unchanged but the diff shows it, include it in the block for context.
+- the code are taken by `-` lines from the diff, the line's number are taken by the old file, not the new file.
+- for every code that are deleted search if this code is useb in other files, if yes, add a block for the usage and explain it.
+- for every code that are deleted search if this code is used in other files, use the rule in codebase-context.md to decide if you need to read those files for context. If yes, add a block for the usage and explain it.
+- in the explanation explain every time if a code is substituded by another code, if yes, explain the new code and the reason of the substitution.
 - **Trivial changes go in one "minor changes" block**: imports, formatting, renames with no
   behavior change, comment-only edits. Say what kind they are.
 - **Non-code files** (config, docs, CI) are grouped by kind, one block per kind unless a change
