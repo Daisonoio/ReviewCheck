@@ -28,7 +28,6 @@ Rules:
 
 - **One block = one unit of intent**: a changed function, method, or member; or a group of hunks
   in the same file that only make sense together.
-- the code is taken by the diff, not by what the person changed in their editor. If a member is unchanged but the diff shows it, include it in the block for context.
 - **Trivial changes go in one "minor changes" block**: imports, formatting, renames with no
   behavior change, comment-only edits. Say what kind they are.
 - **Non-code files** (config, docs, CI) are grouped by kind, one block per kind unless a change
