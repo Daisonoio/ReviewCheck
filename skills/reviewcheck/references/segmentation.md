@@ -36,14 +36,27 @@ Rules:
   context around each hunk and `…` between gaps, not the whole member.
 - **Tests** are their own blocks, placed right after the code they exercise.
 
-## 3. Order
+## 3. Deleted Code
+
+- Deleted code is a block on its own, never attached to the next block; exception: trivial deletions (no behavior change) go in the "minor changes" block;
+- code is taken from the `-` lines of the diff, with line numbers from the old file, cited as [removed] path:start-end;
+- search who still uses the symbol (see codebase-context.md): remaining callers go in the Context field with [context], and are a seam; they do not become blocks;
+- say what replaces it, if anything replaces it, linking to the new code's block by title instead of re-explaining it.
+- 
+## 4. Order
 
 1. Definitions before the code that uses them (types, constants, helpers first).
 2. Then the code that wires them together (configuration, registration, call sites).
 3. Tests right after what they test.
 4. Ties: by file path, then by line number. The order must be the same if you plan again.
+5. **Cycles.** When blocks depend on each other (A uses B and B uses A, directly or through
+   other blocks), start with the block that code outside the cycle calls. If several blocks
+   in the cycle are called from outside, or none is, break the tie with rule 4. Present the
+   blocks of the cycle one after another, link them by title in Links, and tell the person
+   they depend on each other. When more than one is called from outside, say so; when none
+   is, say the cycle is not used yet by the rest of the code.
 
-## 4. Seams (at most 3)
+## 5. Seams (at most 3)
 
 A seam is a place where two pieces must agree and a misunderstanding would hide. Only flag
 a seam when there is a concrete signal:
@@ -54,7 +67,7 @@ a seam when there is a concrete signal:
 
 Describe each seam as a question to keep in mind, never as a problem found.
 
-## 5. The plan you present
+## 6. The plan you present
 
 - Title (one line, from what the changes do).
 - Number of blocks and files; files skipped and why.
@@ -62,9 +75,4 @@ Describe each seam as a question to keep in mind, never as a problem found.
 - Up to 3 seams.
 - "Shall we start with the first block?"
 
-## 6. Deleted Code
 
-- a Deleted code is a block on its own, never attached to the next block; exception: trivial deletions (no behavior change) go in the "minor changes" block;
-- code is taken from the `-` lines of the diff, with line numbers from the old file, cited as [removed] path:start-end;
-- search who still uses the symbol (see codebase-context.md): remaining callers go in the Context field with [context], and are a seam; they do not become blocks;
-- say what replaces it, if anything replaces it, linking to the new code's block by title instead of re-explaining it.

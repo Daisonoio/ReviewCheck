@@ -22,7 +22,7 @@ Accept this block, or request a correction (with a note)?
 ## Rules
 
 - **Code comes from the file**, read at presentation time, with its real line numbers. Never
-  retype or paraphrase code.
+  retype or paraphrase code.Deleted code is the exception: see below.
 - **Be specific.** Name the methods, variables, types, and constants involved. Describe the
   concrete operation, not a category: avoid "handles", "manages", "processes" unless you say
   exactly what is handled and how.
@@ -33,8 +33,8 @@ Accept this block, or request a correction (with a note)?
 - **Uncertainty is mandatory when** the explanation depends on code outside what you read, on a
   name search that may have matched the wrong symbol, or on runtime behavior you cannot see.
 - **Stop after the question.** Do not present the next block in the same turn.
-- **For deleted code** use [removed] path:start-end. The code  should be take from the `-` lines of the diff and the line's number was taken from the old version of the file. 
-
+- **Deleted code** is cited as `[removed] path:start-end`. Take the code from the `-` lines of
+  the diff; the line numbers refer to the file before the change, not the current one.
 ## Recovery
 
 If the person says "show the code", "with citations", or "uncertainty?", present the current
