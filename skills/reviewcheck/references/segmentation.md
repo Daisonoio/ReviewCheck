@@ -64,11 +64,18 @@ a seam when there is a concrete signal:
   (see [codebase-context.md](codebase-context.md));
 - a test covering the changed behavior exists and was not touched;
 - two blocks change the two sides of the same interaction (producer and consumer).
-If seams are more than 3 order them in this way:
-- signal type: changed contracts, then both sides of the same interaction, last test not touched
-- if the same signal type: first the silent change, after the caught by compiler.
-- same signal type and same caught by compiler: first the one with the most callers outside the diff.
-- same signal type, same rumorousness and same caller outside the diff: use the rule 4 of the Order section (by file path, then by line number. The order must be the same if you plan again)
+
+When there are more than 3 seams, rank them and show the first 3 in the plan:
+1. By signal type: changed contracts first, then both sides of the same interaction, then
+   tests not touched.
+2. Same type: silent changes before changes the compiler catches. A change is **silent** when
+   the signature (name, parameters, types) stays the same but what the code returns or does
+   changes, or when the language has no compile-time type checking.
+3. Still tied: the one with the most callers outside the changes first.
+4. Still tied: rule 4 of the Order section (file path, then line number).
+
+Seams left out of the plan are not dropped: show each one in the `Context:` field of the block
+it concerns (test seams in the `Tests:` field) when the person reaches that block.
 
 Describe each seam as a question to keep in mind, never as a problem found.
 

@@ -15,14 +15,16 @@ Why:    <why it exists in this change / what it connects to>
 Links:  <related blocks by title; context facts like callers or tests, each with a citation>
 Context: <optional, at most 2 excerpts of ≤15 lines, each with [context] path:start-end>
 Uncertainty: <what you could not verify, or "none">
-Tests:   <tests that cover this block, if any; if none, don't show>
+Tests: <only if any: tests that use this code and that the changes did not touch — at most 3,
+        each with [context] path:start-end>
+
 Accept this block, or request a correction (with a note)?
 ```
 
 ## Rules
 
 - **Code comes from the file**, read at presentation time, with its real line numbers. Never
-  retype or paraphrase code.Deleted code is the exception: see below.
+  retype or paraphrase code. Deleted code is the exception: see below.
 - **Be specific.** Name the methods, variables, types, and constants involved. Describe the
   concrete operation, not a category: avoid "handles", "manages", "processes" unless you say
   exactly what is handled and how.
