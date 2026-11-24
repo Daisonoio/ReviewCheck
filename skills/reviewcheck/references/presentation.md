@@ -15,7 +15,7 @@ Why:    <why it exists in this change / what it connects to>
 Links:  <related blocks by title; context facts like callers or tests, each with a citation>
 Context: <optional, at most 2 excerpts of ≤15 lines, each with [context] path:start-end>
 Uncertainty: <what you could not verify, or "none">
-Test:   <tests that cover this block, if any; if none, say so>
+Tests:   <tests that cover this block, if any; if none, don't show>
 Accept this block, or request a correction (with a note)?
 ```
 

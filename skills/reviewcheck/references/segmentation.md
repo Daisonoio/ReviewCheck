@@ -59,16 +59,16 @@ Rules:
 ## 5. Seams (at most 3)
 
 A seam is a place where two pieces must agree and a misunderstanding would hide. Only flag
-If seams are more than 3 order they in this way:
-	- signal type: changed contracts, after two way of the same interaction, last test not touched
-	- if the same signal type: first the silent change, after most rumorous.
-	- same signal type and same rumorousness: first who have most caller outside the diff
-	- same signal type, same rumorousness and same caller outside the diff: use the rule 4 of the Order section (by file path, then by line number. The order must be the same if you plan again)
 a seam when there is a concrete signal:
 - a signature or contract changed and callers exist outside the changes
   (see [codebase-context.md](codebase-context.md));
 - a test covering the changed behavior exists and was not touched;
 - two blocks change the two sides of the same interaction (producer and consumer).
+If seams are more than 3 order them in this way:
+- signal type: changed contracts, then both sides of the same interaction, last test not touched
+- if the same signal type: first the silent change, after the caught by compiler.
+- same signal type and same caught by compiler: first the one with the most callers outside the diff.
+- same signal type, same rumorousness and same caller outside the diff: use the rule 4 of the Order section (by file path, then by line number. The order must be the same if you plan again)
 
 Describe each seam as a question to keep in mind, never as a problem found.
 
